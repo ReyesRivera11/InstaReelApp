@@ -5,11 +5,13 @@ import morgan from 'morgan';
 import { PORT } from './shared/config/env';
 import router from './shared/routes/index';
 import { errorHandlerMiddleware } from './shared/middlewares/errorHandler';
+import { corsMiddleware } from './shared/middlewares/cors';
 
 const app = express();
 
 app.disable('x-powered-by');
 
+app.use(corsMiddleware());
 app.use(express.json());
 app.use(cookieParser());
 app.use(morgan('dev'));
