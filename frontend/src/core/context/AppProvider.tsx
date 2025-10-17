@@ -1,9 +1,14 @@
-import { useState } from "react";
+"use client";
+
+import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { AppContext } from "./AppContext";
-import type { Client, Publication, Page } from "../types";
+import type { Client, Publication, Page, User } from "../types";
+import { storage } from "../../shared/services/storage/localStorage";
+import { apiClient } from "../../shared/services/api/apiClients";
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
   const [clients, setClients] = useState<Client[]>([]);
@@ -28,6 +33,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
       status: "published",
     },
   ]);
+
+  useEffect(() => {
+    const token = storage.getToken();
+    const savedUser = storage.getUser();
+
+    if (token && savedUser) {
+      setUser(savedUser);
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const logout = async () => {
+    try {
+      await apiClient.logout();
+    } catch (error) {
+      console.error("Error calling logout API:", error);
+    } finally {
+      storage.clear();
+      setUser(null);
+      setIsAuthenticated(false);
+      setCurrentPage("dashboard");
+    }
+  };
 
   const addClient = (client: Omit<Client, "id" | "createdAt">) => {
     const newClient: Client = {
@@ -58,8 +86,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider
       value={{
+        user,
         isAuthenticated,
         setIsAuthenticated,
+        setUser,
+        logout,
         currentPage,
         setCurrentPage,
         clients,

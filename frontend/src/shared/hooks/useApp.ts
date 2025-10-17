@@ -1,6 +1,7 @@
+"use client";
+
 import { useContext } from "react";
-import { AppContext } from "../../core/context/AppContext";
-import type { AppContextType } from "../../core/context/AppContext";
+import { AppContext, type AppContextType } from "../../core/context/AppContext";
 
 export function useApp(): AppContextType {
   const context = useContext(AppContext);

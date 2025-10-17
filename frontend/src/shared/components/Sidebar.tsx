@@ -1,9 +1,10 @@
+import { useEffect, useState } from "react";
 import type { Page } from "../../core/types";
 
 interface SidebarProps {
   currentPage: Page;
   onNavigate: (page: Page) => void;
-  onLogout: () => void;
+  onLogout: () => Promise<void>;
 }
 
 export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
@@ -215,7 +216,39 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
       ),
     },
   ];
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        setSuccess(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
+  const handleLogout = async () => {
+    setError(null);
+    setSuccess(false);
+
+    try {
+      await onLogout();
+      setSuccess(true);
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Error al cerrar sesión"
+      );
+    }
+  };
   return (
     <div className="w-64 bg-card border-r border-border h-screen flex flex-col">
       {/* Logo */}
@@ -275,7 +308,7 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
       {/* Logout */}
       <div className="p-4 border-t border-border">
         <button
-          onClick={onLogout}
+          onClick={handleLogout}
           className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-accent text-destructive transition-colors"
         >
           <svg

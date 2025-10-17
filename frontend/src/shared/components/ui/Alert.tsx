@@ -22,7 +22,9 @@ export function Alert({ variant = "info", children, icon }: AlertProps) {
   };
 
   return (
-    <div className={`p-4 border rounded-lg flex gap-3 ${variants[variant]}`}>
+    <div
+      className={`fixed top-4 right-4 z-50 p-4 border rounded-lg flex gap-3 shadow-lg max-w-md animate-in slide-in-from-top-5 fade-in duration-300 ${variants[variant]}`}
+    >
       {icon && (
         <div className={`flex-shrink-0 mt-0.5 ${iconColors[variant]}`}>
           {icon}
