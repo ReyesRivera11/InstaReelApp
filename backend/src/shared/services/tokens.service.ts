@@ -61,6 +61,12 @@ class TokenService {
     });
   }
 
+  public async deleteSpecificRefreshToken(token: string): Promise<void> {
+    await prisma.refresh_tokens.deleteMany({
+      where: { token },
+    });
+  }
+
   public async findRefreshToken(token: string) {
     return await prisma.refresh_tokens.findFirst({
       where: { token },
