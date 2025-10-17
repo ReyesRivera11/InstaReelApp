@@ -67,6 +67,17 @@ class TokenService {
     });
   }
 
+  public async storeRefreshToken(userId: number, token: string): Promise<void> {
+    console.log({ userId });
+    
+    await prisma.refresh_tokens.create({
+      data: {
+        user_id: userId,
+        token: token,
+      },
+    });
+  }
+
   public async findRefreshToken(token: string) {
     return await prisma.refresh_tokens.findFirst({
       where: { token },

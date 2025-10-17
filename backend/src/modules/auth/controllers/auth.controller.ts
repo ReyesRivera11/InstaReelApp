@@ -5,7 +5,11 @@ import { validateSchema } from "../../../shared/utils/zodValidation";
 import { HttpCode } from "../../../shared/enums/HttpCode";
 
 import { loginSchema } from "../schemas/auth.schema";
-import { loginService, logoutService} from '../services/index'
+import {
+  loginService,
+  logoutService,
+  refreshTokenService,
+} from "../services/index";
 
 export class AuthController {
   static async login(req: Request, res: Response) {
@@ -45,7 +49,25 @@ export class AuthController {
       res.sendStatus(HttpCode.NO_CONTENT);
       return;
     }
-    
+
     await logoutService(cookies, res);
+  }
+
+  static async refreshToken(req: Request, res: Response) {
+    const cookies = req.cookies;
+
+    const { accessToken, newRefreshToken } = await refreshTokenService(
+      cookies,
+      res
+    );
+
+    res.cookie("jwt", newRefreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      maxAge: Number(JWT_REFRESH_TOKEN_EXPIRES_IN) * 24 * 60 * 60 * 1000,
+    });
+
+    res.json({ accessToken });
   }
 }
