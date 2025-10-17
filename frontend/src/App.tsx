@@ -1,35 +1,68 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
-import "./App.css";
+import { AppProvider } from "./core/context/AppProvider";
+import { LoginPage } from "./modules/auth/pages/LoginPage";
+import { ClientsPage } from "./modules/clients/pages/ClientsPage";
+import { DashboardPage } from "./modules/dashboard/pages/DashboardPage";
+import { PublicationsPage } from "./modules/publications/pages/PublicationsPage";
+import { ScheduleReelPage } from "./modules/schedule/ScheduleReelPage";
+import { Sidebar } from "./shared/components/Sidebar";
+import { useApp } from "./shared/hooks/useApp";
 
-function App() {
-  const [count, setCount] = useState(0);
+function AppContent() {
+  const {
+    isAuthenticated,
+    setIsAuthenticated,
+    currentPage,
+    setCurrentPage,
+    clients,
+    addClient,
+    deleteClient,
+    publications,
+  } = useApp();
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setCurrentPage("dashboard");
+  };
+
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
 
   return (
-    <>
-      <div className="bg-amber-400">
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <div className="flex h-screen bg-background">
+      <Sidebar
+        currentPage={currentPage}
+        onNavigate={setCurrentPage}
+        onLogout={handleLogout}
+      />
+      <main className="flex-1 overflow-auto">
+        <div className="p-8">
+          {currentPage === "dashboard" && (
+            <DashboardPage publications={publications} clients={clients} />
+          )}
+          {currentPage === "clients" && (
+            <ClientsPage
+              clients={clients}
+              onAddClient={addClient}
+              onDeleteClient={deleteClient}
+            />
+          )}
+          {currentPage === "schedule" && <ScheduleReelPage />}
+          {currentPage === "publications" && <PublicationsPage />}
+        </div>
+      </main>
+    </div>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <AppProvider>
+      <AppContent />
+    </AppProvider>
+  );
+}
