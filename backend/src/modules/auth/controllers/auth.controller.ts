@@ -1,8 +1,15 @@
 import { Request, Response } from "express";
-import { loginSchema } from "../schemas/auth.schema";
-import { validateSchema } from "../../../shared/utils/zodValidation";
-import { loginService } from "../services/login.service";
 import { JWT_REFRESH_TOKEN_EXPIRES_IN } from "../../../shared/config/env";
+
+import { validateSchema } from "../../../shared/utils/zodValidation";
+import { HttpCode } from "../../../shared/enums/HttpCode";
+
+import { loginSchema } from "../schemas/auth.schema";
+import {
+  loginService,
+  logoutService,
+  refreshTokenService,
+} from "../services/index";
 
 export class AuthController {
   static async login(req: Request, res: Response) {
@@ -26,12 +33,41 @@ export class AuthController {
       httpOnly: true,
       secure: true,
       sameSite: "strict",
-       maxAge: Number(JWT_REFRESH_TOKEN_EXPIRES_IN) * 24 * 60 * 60 * 1000
+      maxAge: Number(JWT_REFRESH_TOKEN_EXPIRES_IN) * 24 * 60 * 60 * 1000,
     });
 
     res.json({
       accessToken,
       user,
     });
+  }
+
+  static async logout(req: Request, res: Response) {
+    const cookies = req.cookies;
+
+    if (!cookies?.jwt) {
+      res.sendStatus(HttpCode.NO_CONTENT);
+      return;
+    }
+
+    await logoutService(cookies, res);
+  }
+
+  static async refreshToken(req: Request, res: Response) {
+    const cookies = req.cookies;
+
+    const { accessToken, newRefreshToken } = await refreshTokenService(
+      cookies,
+      res
+    );
+
+    res.cookie("jwt", newRefreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      maxAge: Number(JWT_REFRESH_TOKEN_EXPIRES_IN) * 24 * 60 * 60 * 1000,
+    });
+
+    res.json({ accessToken });
   }
 }
