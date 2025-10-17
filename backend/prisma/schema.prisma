@@ -6,3 +6,20 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+model user {
+  id        Int    @id @default(autoincrement())
+  firstName String
+  lastName  String
+  email     String @unique
+  password  String
+
+  refresh_tokens refresh_tokens[]
+}
+
+model refresh_tokens {
+  id      Int    @id @default(autoincrement())
+  user_id Int
+  user    user   @relation(fields: [user_id], references: [id])
+  token   String
+}

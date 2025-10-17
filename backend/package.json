@@ -7,6 +7,9 @@
     "dev": "ts-node-dev src/index.ts",
     "tsc": "tsc"
   },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -30,6 +33,7 @@
     "@types/node": "^24.8.1",
     "morgan": "^1.10.1",
     "prisma": "^6.17.1",
+    "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"
   }
