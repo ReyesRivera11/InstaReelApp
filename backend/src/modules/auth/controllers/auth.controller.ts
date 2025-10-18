@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { JWT_REFRESH_TOKEN_EXPIRES_IN } from "../../../shared/config/env";
 
 import { validateSchema } from "../../../shared/utils/zodValidation";
+import { AppError } from "../../../core/errors/AppError";
 import { HttpCode } from "../../../shared/enums/HttpCode";
 
 import { loginSchema } from "../schemas/auth.schema";
@@ -9,6 +10,7 @@ import {
   loginService,
   logoutService,
   refreshTokenService,
+  getMeService,
 } from "../services/index";
 
 export class AuthController {
@@ -69,5 +71,22 @@ export class AuthController {
     });
 
     res.json({ accessToken });
+  }
+
+  static async getMe(req: Request, res: Response) {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader?.startsWith("Bearer ")) {
+      throw new AppError({
+        httpCode: HttpCode.UNAUTHORIZED,
+        description: "No authorization token provided",
+      });
+    }
+
+    const accessToken = authHeader.split(" ")[1];
+
+    const user = await getMeService(accessToken);
+
+    res.json({ user });
   }
 }

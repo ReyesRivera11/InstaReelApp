@@ -7,6 +7,20 @@ import { HttpCode } from "../../../shared/enums/HttpCode";
 import { LoginData } from "../interfaces/login.interface";
 
 export class AuthModel {
+  static async getUserByIdWithoutSensitiveData(userId: number) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+      }
+    });
+
+    return user;
+  }
+
   static async login({ email, password }: LoginData) {
     const user = await prisma.user.findUnique({
       where: { email },
@@ -38,5 +52,18 @@ export class AuthModel {
     const { password: _, ...userWithoutPassword } = user;
 
     return userWithoutPassword;
+  }
+
+  static async getMe(userId: number) {
+    const user = await this.getUserByIdWithoutSensitiveData(userId);
+
+    if(!user) {
+      throw new AppError({
+        httpCode: HttpCode.NOT_FOUND,
+        description: "User not found",
+      });
+    }
+
+    return user;
   }
 }

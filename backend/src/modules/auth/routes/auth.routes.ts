@@ -7,3 +7,4 @@ authRoutes.post('/login', AuthController.login);
 authRoutes.post('/logout', AuthController.logout);
 
 authRoutes.post('/refresh', AuthController.refreshToken)
+authRoutes.get('/me', AuthController.getMe)
