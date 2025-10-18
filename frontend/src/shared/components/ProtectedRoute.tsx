@@ -11,10 +11,8 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, setCurrentPage } = useApp();
-
   useEffect(() => {
     if (!isAuthenticated) {
-      console.log("[v0] User not authenticated, redirecting to login");
       setCurrentPage("dashboard");
     }
   }, [isAuthenticated, setCurrentPage]);

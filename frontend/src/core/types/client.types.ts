@@ -11,10 +11,10 @@ export interface Client {
 }
 
 export interface User {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
+  id?: number;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
 }
 
 export interface AuthResponse {
@@ -22,3 +22,11 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface GetMeResponse {
+  user: {
+    id: number;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+}

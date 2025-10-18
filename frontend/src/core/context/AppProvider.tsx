@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { ReactNode } from "react";
 import { AppContext } from "./AppContext";
 import type { Client, Publication, Page, User } from "../types";
@@ -10,6 +10,7 @@ import { apiClient } from "../../shared/services/api/apiClients";
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
   const [clients, setClients] = useState<Client[]>([]);
   const [publications, setPublications] = useState<Publication[]>([
@@ -33,16 +34,42 @@ export function AppProvider({ children }: { children: ReactNode }) {
       status: "published",
     },
   ]);
-
-  useEffect(() => {
+  const fetchUserData = useCallback(async () => {
     const token = storage.getToken();
-    const savedUser = storage.getUser();
 
-    if (token && savedUser) {
-      setUser(savedUser);
-      setIsAuthenticated(true);
+    if (!token) {
+      setIsAuthenticated(false);
+      setUser(null);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await apiClient.getMe();
+      if (response) {
+        const userData: User = {
+          id: response.user?.id,
+          email: response.user?.email,
+          firstName: response.user?.firstName,
+          lastName: response.user?.lastName,
+        };
+        setUser(userData);
+        setIsAuthenticated(true);
+      } else {
+        throw new Error("Failed to get user data");
+      }
+    } catch (error) {
+      console.error("[v0] Error fetching user data:", error);
+      setUser(null);
+      setIsAuthenticated(false);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    fetchUserData();
+  }, [fetchUserData]);
 
   const logout = async () => {
     try {
@@ -82,6 +109,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const deletePublication = (id: string) => {
     setPublications(publications.filter((p) => p.id !== id));
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-lg">Cargando...</div>
+      </div>
+    );
+  }
 
   return (
     <AppContext.Provider

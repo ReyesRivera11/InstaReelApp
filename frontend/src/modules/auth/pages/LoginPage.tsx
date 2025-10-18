@@ -41,16 +41,10 @@ export function LoginPage() {
     setSuccess(false);
     setIsLoading(true);
 
-    console.log("[v0] Attempting login with:", { email });
-
     try {
       const response = await apiClient.login(email, password);
 
-      console.log("[v0] Login successful:", response);
-
       storage.setToken(response.accessToken);
-      storage.setUser(response.user);
-
       setUser(response.user);
       setSuccess(true);
 
@@ -59,7 +53,6 @@ export function LoginPage() {
         setIsAuthenticated(true);
       }, 1500);
     } catch (err) {
-      console.error("[v0] Login error:", err);
       setError(err instanceof Error ? err.message : "Error al iniciar sesión");
     } finally {
       setIsLoading(false);
