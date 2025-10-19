@@ -1,9 +1,7 @@
-"use client";
-
 import { useState, useEffect, useCallback } from "react";
 import type { ReactNode } from "react";
 import { AppContext } from "./AppContext";
-import type { Client, Publication, Page, User } from "../types";
+import type { Client, Publication, Page, User, ClientDB } from "../types";
 import { storage } from "../../shared/services/storage/localStorage";
 import { apiClient } from "../../shared/services/api/apiClients";
 
@@ -13,27 +11,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
   const [clients, setClients] = useState<Client[]>([]);
-  const [publications, setPublications] = useState<Publication[]>([
-    {
-      id: "1",
-      clientId: "1",
-      title: "Nuevo menú de temporada",
-      description:
-        "Descubre nuestros nuevos cafés especiales ☕ #CafeBonito #Coffee",
-      videoUrl: "",
-      scheduledDate: new Date(2025, 9, 20, 10, 0).toISOString(),
-      status: "scheduled",
-    },
-    {
-      id: "2",
-      clientId: "2",
-      title: "Rutina de entrenamiento",
-      description: "Ejercicios para empezar tu semana 💪 #Fitness #Workout",
-      videoUrl: "",
-      scheduledDate: new Date(2025, 9, 18, 9, 0).toISOString(),
-      status: "published",
-    },
-  ]);
+  const [publications, setPublications] = useState<Publication[]>([]);
+
   const fetchUserData = useCallback(async () => {
     const token = storage.getToken();
 
@@ -46,7 +25,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     try {
       const response = await apiClient.getMe();
-      if (response) {
+      if (response && response.user) {
         const userData: User = {
           id: response.user?.id,
           email: response.user?.email,
@@ -67,9 +46,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const loadClients = useCallback(async () => {
+    try {
+      const response = await apiClient.getClients();
+      if (response.success && response.data) {
+        const transformedClients: Client[] = response.data.map(
+          (clientDB: ClientDB) => ({
+            id: clientDB.id?.toString() || "",
+            name: clientDB.name,
+            instagramHandle: clientDB.username,
+            description: clientDB.description,
+            instagramId: clientDB.idInsta,
+            accessToken: clientDB.access_token,
+            isAuthenticated: !!clientDB.access_token,
+            createdAt: new Date().toISOString(),
+          })
+        );
+        setClients(transformedClients);
+      }
+    } catch (error) {
+      console.error("[v0] Error loading clients:", error);
+      throw error;
+    }
+  }, []);
+
   useEffect(() => {
     fetchUserData();
   }, [fetchUserData]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadClients();
+    }
+  }, [isAuthenticated, loadClients]);
 
   const logout = async () => {
     try {
@@ -81,20 +90,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setIsAuthenticated(false);
       setCurrentPage("dashboard");
+      setClients([]);
+      setPublications([]);
     }
   };
 
-  const addClient = (client: Omit<Client, "id" | "createdAt">) => {
-    const newClient: Client = {
-      ...client,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-    };
-    setClients([...clients, newClient]);
+  const addClient = async () => {
+    await loadClients();
   };
 
-  const deleteClient = (id: string) => {
-    setClients(clients.filter((c) => c.id !== id));
+  const deleteClient = async (id: string) => {
+    try {
+      const response = await apiClient.deleteClient(id);
+      if (response.success) {
+        setClients(clients.filter((c) => c.id !== id));
+      }
+    } catch (error) {
+      console.error("[v0] Error deleting client:", error);
+    }
   };
 
   const addPublication = (publication: Omit<Publication, "id" | "status">) => {
@@ -131,6 +144,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         clients,
         addClient,
         deleteClient,
+        loadClients,
         publications,
         addPublication,
         deletePublication,

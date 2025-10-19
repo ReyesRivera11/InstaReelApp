@@ -1,4 +1,12 @@
-import type { AuthResponse, GetMeResponse, User } from "../../../core/types";
+import type {
+  AuthResponse,
+  ClientDB,
+  CreateClientDTO,
+  GetMeResponse,
+  InitiateOAuthRequest,
+  InitiateOAuthResponse,
+  User,
+} from "../../../core/types";
 
 export interface ApiResponse<T> {
   user?: User;
@@ -43,7 +51,6 @@ class ApiClient {
   }
 
   private async handleUnauthorized(): Promise<string | null> {
-
     if (this.isRefreshing) {
       return new Promise((resolve) => {
         this.addRefreshSubscriber((token: string) => {
@@ -293,6 +300,134 @@ class ApiClient {
     } catch (error) {
       console.error("Error refreshing token:", error);
       return null;
+    }
+  }
+  async createClient(data: CreateClientDTO): Promise<ApiResponse<ClientDB>> {
+    const token = localStorage.getItem("auth_token");
+
+    if (!token) {
+      return {
+        success: false,
+        error: "No authentication token found",
+      };
+    }
+
+    try {
+      const response = await this.fetchWithAuth(
+        `${this.baseURL}/client/create`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(data),
+          credentials: "include",
+        }
+      );
+
+      return await response.json();
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Error desconocido",
+      };
+    }
+  }
+  async getClients(): Promise<ApiResponse<ClientDB[]>> {
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+
+    if (!token) {
+      return {
+        success: false,
+        error: "No authentication token found",
+      };
+    }
+
+    try {
+      const response = await this.fetchWithAuth(`${this.baseURL}/client/list`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
+
+      return await response.json();
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Error desconocido",
+      };
+    }
+  }
+  async deleteClient(id: string): Promise<ApiResponse<void>> {
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+
+    if (!token) {
+      return {
+        success: false,
+        error: "No authentication token found",
+      };
+    }
+
+    try {
+      const response = await this.fetchWithAuth(
+        `${this.baseURL}/client/${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        }
+      );
+
+      return await response.json();
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Error desconocido",
+      };
+    }
+  }
+  async initiateInstagramOAuth(
+    data: InitiateOAuthRequest
+  ): Promise<InitiateOAuthResponse> {
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+
+    if (!token) {
+      return {
+        success: false,
+        error: "No authentication token found",
+      };
+    }
+
+    try {
+      const response = await this.fetchWithAuth(
+        `${this.baseURL}/client/initiate-oauth`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(data),
+          credentials: "include",
+        }
+      );
+
+      return await response.json();
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Error desconocido",
+      };
     }
   }
 }

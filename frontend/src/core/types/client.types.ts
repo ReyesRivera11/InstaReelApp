@@ -9,6 +9,31 @@ export interface Client {
   instagramId?: string;
   isAuthenticated?: boolean;
 }
+export interface CreateClientDTO {
+  name: string;
+  username: string;
+  description?: string;
+}
+export interface InitiateOAuthRequest {
+  name: string;
+  username: string;
+  description?: string;
+}
+
+export interface InitiateOAuthResponse {
+  success: boolean;
+  authUrl?: string;
+  pendingClientId?: string;
+  error?: string;
+}
+export interface ClientDB {
+  id: number;
+  name: string;
+  username: string;
+  description?: string;
+  idInsta: string;
+  access_token: string;
+}
 
 export interface User {
   id?: number;
