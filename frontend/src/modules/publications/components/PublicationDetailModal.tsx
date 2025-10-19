@@ -1,8 +1,8 @@
-import type { Publication, Client } from "../../../core/types";
+import type { Publication, ClientDB } from "../../../core/types";
 
 interface PublicationDetailModalProps {
   publication: Publication | null;
-  client: Client | undefined;
+  client: ClientDB | undefined;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -107,7 +107,7 @@ export function PublicationDetailModal({
               </div>
               <p>{client?.name || "Cliente desconocido"}</p>
               <p className="text-sm text-muted-foreground">
-                @{client?.instagramHandle}
+                @{client?.username}
               </p>
             </div>
           </div>
