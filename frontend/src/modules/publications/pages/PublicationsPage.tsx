@@ -26,9 +26,9 @@ export function PublicationsPage() {
   };
 
   const getClientName = (clientId: string) => {
-    const client = clients.find((c) => c.id === clientId);
+    const client = clients.find((c) => c.id === +clientId);
     return client
-      ? `${client.name} (@${client.instagramHandle})`
+      ? `${client.name} (@${client.username})`
       : "Cliente desconocido";
   };
 
@@ -150,7 +150,9 @@ export function PublicationsPage() {
           </div>
           <div className="space-y-1">
             {pubs.slice(0, 3).map((pub) => {
-              const client = clients.find((c) => c.id === pub.clientId);
+              const client = clients.find(
+                (c) => c.id.toString() === pub.clientId
+              );
               return (
                 <div
                   key={pub.id}
@@ -479,7 +481,9 @@ export function PublicationsPage() {
 
       <PublicationDetailModal
         publication={selectedPublication}
-        client={clients.find((c) => c.id === selectedPublication?.clientId)}
+        client={clients.find(
+          (c) => c.id.toString() === selectedPublication?.clientId
+        )}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
       />

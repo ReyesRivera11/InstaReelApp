@@ -1,14 +1,14 @@
-export interface Client {
-  id: string;
-  name: string;
-  instagramHandle: string;
-  description?: string;
-  createdAt: string;
-  accessToken?: string;
-  pageId?: string;
-  instagramId?: string;
-  isAuthenticated?: boolean;
-}
+// export interface Client {
+//   id: string;
+//   name: string;
+//   instagramHandle: string;
+//   description?: string;
+//   createdAt: string;
+//   accessToken?: string;
+//   pageId?: string;
+//   instagramId?: string;
+//   isAuthenticated?: boolean;
+// }
 export interface CreateClientDTO {
   name: string;
   username: string;
@@ -38,8 +38,8 @@ export interface ClientDB {
   name: string;
   username: string;
   description?: string;
-  idInsta: string;
-  access_token: string;
+  idInsta?: string;
+  access_token?: string;
 }
 
 export interface User {

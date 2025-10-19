@@ -25,11 +25,11 @@ import {
 import { metaApi } from "../../shared/services/api/apiMeta";
 import { appPublications } from "../../shared/services/api/apiPublications";
 
-const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB in bytes
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024; 
 const MIN_TITLE_LENGTH = 3;
 const MAX_TITLE_LENGTH = 100;
 const MIN_DESCRIPTION_LENGTH = 1;
-const MAX_DESCRIPTION_LENGTH = 2200; // Instagram caption limit
+const MAX_DESCRIPTION_LENGTH = 2200; 
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/x-msvideo"];
 
 export function ScheduleReelPage() {
@@ -110,18 +110,18 @@ export function ScheduleReelPage() {
       return;
     }
 
-    const selectedClient = clients.find((c) => c.id === clientId);
+    const selectedClient = clients.find((c) => c.id === +clientId);
     if (!selectedClient) {
       setError("Cliente no encontrado");
       return;
     }
 
-    if (!selectedClient.isAuthenticated || !selectedClient.accessToken) {
+    if ( !selectedClient.access_token) {
       setError("El cliente no está autenticado con Instagram");
       return;
     }
 
-    if (!selectedClient.instagramId) {
+    if (!selectedClient.idInsta) {
       setError("El cliente no tiene un ID de Instagram configurado");
       return;
     }
@@ -134,15 +134,15 @@ export function ScheduleReelPage() {
       setUploadProgress("Creando contenedor de media...");
       console.log(
         "[v0] Creating media container for Instagram ID:",
-        selectedClient.instagramId
+        selectedClient.idInsta
       );
 
       const containerResponse = await metaApi.createMediaContainer(
-        selectedClient.instagramId,
+        selectedClient.idInsta,
         {
           upload_type: "resumable",
           media_type: "REELS",
-          access_token: selectedClient.accessToken,
+          access_token: selectedClient.access_token,
           caption: description,
         }
       );
@@ -162,7 +162,7 @@ export function ScheduleReelPage() {
 
       const uploadResponse = await metaApi.uploadVideoBinary(
         containerResponse.uri,
-        selectedClient.accessToken,
+        selectedClient.access_token,
         videoFile,
         videoSize
       );
@@ -339,8 +339,7 @@ export function ScheduleReelPage() {
                 <option value="">Selecciona un cliente</option>
                 {clients.map((client) => (
                   <option key={client.id} value={client.id}>
-                    {client.name} (@{client.instagramHandle})
-                    {!client.isAuthenticated && " - No autenticado"}
+                    {client.name} (@{client.username})
                   </option>
                 ))}
               </Select>

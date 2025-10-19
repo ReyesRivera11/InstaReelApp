@@ -7,16 +7,10 @@ import {
   CardContent,
   CardHeader,
 } from "../../../shared/components/ui";
-
-interface Client {
-  id: string;
-  name: string;
-  instagramHandle: string;
-  description?: string;
-}
+import type { ClientDB } from "../../../core/types";
 
 interface ClientCardProps {
-  client: Client;
+  client: ClientDB;
   onDelete: (id: string) => void;
 }
 
@@ -34,14 +28,14 @@ export function ClientCard({ client, onDelete }: ClientCardProps) {
                 {client.name}
               </h3>
               <p className="text-sm text-muted-foreground">
-                @{client.instagramHandle}
+                @{client.username}
               </p>
             </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onDelete(client.id)}
+            onClick={() => onDelete(client.id.toString())}
             className="text-red-500 hover:text-red-600 hover:bg-red-50 flex-shrink-0 h-9 w-9"
           >
             <Trash2 className="w-5 h-5" />

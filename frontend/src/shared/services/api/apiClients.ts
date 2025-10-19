@@ -203,7 +203,7 @@ class ApiClient {
         method: "POST",
         headers,
         body: formData,
-        credentials: "include", // Ensure cookies are sent
+        credentials: "include", 
       });
 
       return await response.json();
