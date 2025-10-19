@@ -1,0 +1,25 @@
+import { createContext } from "react";
+import type {  Publication, Page, User, ClientDB } from "../types";
+
+export interface AppContextType {
+  user: User | null;
+  isAuthenticated: boolean;
+  setIsAuthenticated: (value: boolean) => void;
+  setUser: (user: User | null) => void;
+  logout: () => Promise<void>;
+  currentPage: Page;
+  setCurrentPage: (page: Page) => void;
+  clients: ClientDB[];
+  addClient: (client: {
+    name: string;
+    instagramHandle: string;
+    description?: string;
+  }) => Promise<void>;
+  deleteClient: (id: string) => void;
+  loadClients: () => Promise<void>;
+  publications: Publication[];
+  addPublication: (publication: Omit<Publication, "id" | "status">) => void;
+  deletePublication: (id: string) => void;
+}
+
+export const AppContext = createContext<AppContextType | undefined>(undefined);
