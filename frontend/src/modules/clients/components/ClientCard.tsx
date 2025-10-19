@@ -1,14 +1,19 @@
 "use client";
 
+import { Trash2, Instagram } from "lucide-react";
 import {
+  Button,
   Card,
-  CardHeader,
   CardContent,
-} from "../../../shared/components/ui/Card";
-import { Badge } from "../../../shared/components/ui/Badge";
-import { Button } from "../../../shared/components/ui/Button";
-import { Icons } from "../../../shared/components/icons";
-import type { Client } from "../../../core/types";
+  CardHeader,
+} from "../../../shared/components/ui";
+
+interface Client {
+  id: string;
+  name: string;
+  instagramHandle: string;
+  description?: string;
+}
 
 interface ClientCardProps {
   client: Client;
@@ -17,29 +22,18 @@ interface ClientCardProps {
 
 export function ClientCard({ client, onDelete }: ClientCardProps) {
   return (
-    <Card hover>
-      <CardHeader>
-        <div className="flex items-start justify-between gap-3">
+    <Card className="max-w-md w-full">
+      <CardHeader className="p-4">
+        <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center flex-shrink-0 text-white">
-              <Icons.Instagram />
+            <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 text-white">
+              <Instagram className="w-7 h-7" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-semibold text-foreground truncate">
-                  {client.name}
-                </h3>
-                {client.isAuthenticated && (
-                  <Badge
-                    variant="success"
-                    className="flex items-center gap-1 flex-shrink-0"
-                  >
-                    <Icons.CheckCircle />
-                    Conectado
-                  </Badge>
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground truncate">
+              <h3 className="font-semibold text-foreground text-lg">
+                {client.name}
+              </h3>
+              <p className="text-sm text-muted-foreground">
                 @{client.instagramHandle}
               </p>
             </div>
@@ -48,31 +42,17 @@ export function ClientCard({ client, onDelete }: ClientCardProps) {
             variant="ghost"
             size="sm"
             onClick={() => onDelete(client.id)}
-            className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0 p-2"
+            className="text-red-500 hover:text-red-600 hover:bg-red-50 flex-shrink-0 h-9 w-9"
           >
-            <Icons.Trash />
+            <Trash2 className="w-5 h-5" />
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
-        {client.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {client.description}
-          </p>
-        )}
-        {client.isAuthenticated && client.accessToken && (
-          <div className="p-3 bg-muted/50 rounded-lg space-y-1">
-            <p className="text-xs text-muted-foreground font-medium">
-              Credenciales conectadas:
-            </p>
-            <div className="flex items-center gap-2 overflow-hidden">
-              <code className="text-xs bg-background px-2 py-1 rounded border border-border truncate">
-                Token: {client.accessToken.substring(0, 20)}...
-              </code>
-            </div>
-          </div>
-        )}
-      </CardContent>
+      {client.description && (
+        <CardContent className="p-4 pt-0">
+          <p className="text-sm text-muted-foreground">{client.description}</p>
+        </CardContent>
+      )}
     </Card>
   );
 }

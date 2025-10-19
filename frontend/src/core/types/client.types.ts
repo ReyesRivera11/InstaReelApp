@@ -19,7 +19,14 @@ export interface InitiateOAuthRequest {
   username: string;
   description?: string;
 }
-
+export interface ClientView {
+  id: string;
+  name: string;
+  description?: string;
+  idInsta: string;
+  access_token: string;
+  username: string;
+}
 export interface InitiateOAuthResponse {
   success: boolean;
   authUrl?: string;

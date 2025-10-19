@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import type { Client, Publication, Page, User } from "../types";
+import type {  Publication, Page, User, ClientDB } from "../types";
 
 export interface AppContextType {
   user: User | null;
@@ -9,7 +9,7 @@ export interface AppContextType {
   logout: () => Promise<void>;
   currentPage: Page;
   setCurrentPage: (page: Page) => void;
-  clients: Client[];
+  clients: ClientDB[];
   addClient: (client: {
     name: string;
     instagramHandle: string;

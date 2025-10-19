@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { ReactNode } from "react";
 import { AppContext } from "./AppContext";
-import type { Client, Publication, Page, User, ClientDB } from "../types";
+import type { Publication, Page, User, ClientDB } from "../types";
 import { storage } from "../../shared/services/storage/localStorage";
 import { apiClient } from "../../shared/services/api/apiClients";
 
@@ -10,7 +10,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
-  const [clients, setClients] = useState<Client[]>([]);
+  const [clients, setClients] = useState<ClientDB[]>([
+    {
+      id: 1,
+      access_token: "dskjhfsjkdf",
+      name: "ksdhfklshdfsdf",
+      description: "jksdhfkuhsdf",
+      idInsta: "dsfsdf",
+      username: "ujsedusgdiu",
+    },
+  ]);
   const [publications, setPublications] = useState<Publication[]>([]);
 
   const fetchUserData = useCallback(async () => {
@@ -49,19 +58,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const loadClients = useCallback(async () => {
     try {
       const response = await apiClient.getClients();
+
       if (response.success && response.data) {
-        const transformedClients: Client[] = response.data.map(
+        const transformedClients: ClientDB[] = response.data.map(
           (clientDB: ClientDB) => ({
-            id: clientDB.id?.toString() || "",
+            id: clientDB.id, // 👈 mantenerlo numérico, sin toString()
             name: clientDB.name,
-            instagramHandle: clientDB.username,
             description: clientDB.description,
-            instagramId: clientDB.idInsta,
-            accessToken: clientDB.access_token,
-            isAuthenticated: !!clientDB.access_token,
-            createdAt: new Date().toISOString(),
+            idInsta: clientDB.idInsta,
+            access_token: clientDB.access_token,
+            username: clientDB.username,
           })
         );
+
         setClients(transformedClients);
       }
     } catch (error) {
@@ -103,7 +112,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const response = await apiClient.deleteClient(id);
       if (response.success) {
-        setClients(clients.filter((c) => c.id !== id));
+        setClients(clients.filter((c) => c.id.toString() !== id));
       }
     } catch (error) {
       console.error("[v0] Error deleting client:", error);

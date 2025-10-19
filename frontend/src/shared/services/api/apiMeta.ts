@@ -26,15 +26,26 @@ export class MetaApi {
       );
 
       if (!response.ok) {
-        const err = await response.text();
-        throw new Error(
-          `Error creando contenedor: ${response.status} - ${err}`
-        );
+        let errorMessage = "Error desconocido";
+        try {
+          const errData = await response.json();
+          console.error("[MetaAPI] Error JSON:", errData);
+          if (errData.error?.message) {
+            errorMessage = errData.error.message;
+          } else {
+            errorMessage = JSON.stringify(errData);
+          }
+        } catch {
+          const errText = await response.text();
+          errorMessage = errText;
+        }
+
+        throw new Error(errorMessage);
       }
 
       return (await response.json()) as MediaContainerResponse;
     } catch (error) {
-      console.error("Error creando contenedor de media:", error);
+      console.error(error);
       throw error;
     }
   }

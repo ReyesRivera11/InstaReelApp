@@ -14,8 +14,6 @@ function AppContent() {
     currentPage,
     setCurrentPage,
     clients,
-    addClient,
-    deleteClient,
     publications,
     logout,
   } = useApp();
@@ -37,13 +35,7 @@ function AppContent() {
             {currentPage === "dashboard" && (
               <DashboardPage publications={publications} clients={clients} />
             )}
-            {currentPage === "clients" && (
-              <ClientsPage
-                clients={clients}
-                onAddClient={addClient}
-                onDeleteClient={deleteClient}
-              />
-            )}
+            {currentPage === "clients" && <ClientsPage />}
             {currentPage === "schedule" && <ScheduleReelPage />}
             {currentPage === "publications" && <PublicationsPage />}
           </div>
