@@ -10,16 +10,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
-  const [clients, setClients] = useState<ClientDB[]>([
-    {
-      id: 1,
-      access_token: "dskjhfsjkdf",
-      name: "ksdhfklshdfsdf",
-      description: "jksdhfkuhsdf",
-      idInsta: "dsfsdf",
-      username: "ujsedusgdiu",
-    },
-  ]);
+  const [clients, setClients] = useState<ClientDB[]>([]);
   const [publications, setPublications] = useState<Publication[]>([]);
   const fetchUserData = useCallback(async () => {
     const token = storage.getToken();
@@ -57,20 +48,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const loadClients = useCallback(async () => {
     try {
       const response = await apiClient.getClients();
-      console.log(response);
-      if (response.success && response.data) {
-        const transformedClients: ClientDB[] = response.data.map(
-          (clientDB: ClientDB) => ({
-            id: clientDB.id, 
-            name: clientDB.name,
-            description: clientDB.description,
-            idInsta: clientDB.idInsta,
-            access_token: clientDB.access_token,
-            username: clientDB.username,
-          })
-        );
-
-        setClients(transformedClients);
+      if (response.clients) {
+        setClients(response.clients);
       }
     } catch (error) {
       console.error("[v0] Error loading clients:", error);

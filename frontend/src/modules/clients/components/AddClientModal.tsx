@@ -45,7 +45,6 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
     }
   }, [success]);
 
-  // ✅ Escucha los mensajes desde la ventana popup del callback
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
@@ -54,7 +53,7 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
         setSuccess(true);
         setTimeout(() => {
           handleReset();
-          onClose(); // 🔒 Cierra el modal automáticamente
+          onClose();
         }, 1500);
       } else if (event.data.type === "INSTAGRAM_OAUTH_ERROR") {
         setError(event.data.error || "Error en la autenticación de Instagram");
@@ -109,7 +108,6 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
       return;
     }
 
-    // 🔹 Guarda los datos antes de abrir la ventana de Meta
     const clientData = {
       name,
       username: instagramHandle,
@@ -117,13 +115,12 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
     };
     localStorage.setItem("pending_client", JSON.stringify(clientData));
 
-    // 🔹 Construye la URL de Meta OAuth
     const oauthUrl =
       "https://www.facebook.com/dialog/oauth?" +
       new URLSearchParams({
         client_id: "25204565109180194",
         display: "page",
-        redirect_uri: "https://73dc18552c43.ngrok-free.app/meta/callback",
+        redirect_uri: "https://instareel-app.netlify.app/meta/callback",
         response_type: "token",
         scope:
           "instagram_basic,instagram_content_publish,instagram_manage_comments,instagram_manage_insights,pages_show_list,pages_read_engagement",

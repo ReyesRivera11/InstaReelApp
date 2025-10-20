@@ -14,10 +14,10 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
   message?: string;
+  clients?: ClientDB[];
 }
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 class ApiClient {
   private baseURL: string;
@@ -27,6 +27,10 @@ class ApiClient {
   constructor(baseURL: string) {
     this.baseURL = baseURL;
   }
+
+  private defaultFetchOptions: RequestInit = {
+    credentials: "include",
+  };
 
   private getHeaders(): HeadersInit {
     const token = localStorage.getItem("auth_token");
@@ -53,9 +57,7 @@ class ApiClient {
   private async handleUnauthorized(): Promise<string | null> {
     if (this.isRefreshing) {
       return new Promise((resolve) => {
-        this.addRefreshSubscriber((token: string) => {
-          resolve(token);
-        });
+        this.addRefreshSubscriber((token: string) => resolve(token));
       });
     }
 
@@ -67,9 +69,7 @@ class ApiClient {
         credentials: "include",
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to refresh token");
-      }
+      if (!response.ok) throw new Error("Failed to refresh token");
 
       const data = await response.json();
       const newToken = data.accessToken;
@@ -89,10 +89,13 @@ class ApiClient {
     url: string,
     options: RequestInit
   ): Promise<Response> {
-    const fetchOptions = {
+    const fetchOptions: RequestInit = {
+      ...this.defaultFetchOptions,
       ...options,
-      headers: this.getHeaders(),
-      credentials: "include" as RequestCredentials,
+      headers: {
+        ...this.getHeaders(),
+        ...(options.headers || {}),
+      },
     };
 
     let response = await fetch(url, fetchOptions);
@@ -100,23 +103,20 @@ class ApiClient {
     if (response.status === 401) {
       const newToken = await this.handleUnauthorized();
       if (newToken) {
-        const headers = {
-          ...options.headers,
-          Authorization: `Bearer ${newToken}`,
-        } as HeadersInit;
-
-        response = await fetch(url, {
-          ...options,
-          headers,
-          credentials: "include" as RequestCredentials,
-        });
+        const retryOptions = {
+          ...fetchOptions,
+          headers: {
+            ...fetchOptions.headers,
+            Authorization: `Bearer ${newToken}`,
+          },
+        };
+        response = await fetch(url, retryOptions);
       }
     }
 
     return response;
   }
 
-  // Métodos HTTP genéricos
   async get<T>(endpoint: string): Promise<ApiResponse<T>> {
     try {
       const response = await this.fetchWithAuth(`${this.baseURL}${endpoint}`, {
@@ -125,6 +125,7 @@ class ApiClient {
       console.log(response);
       return await response.json();
     } catch (error) {
+      console.log(error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "Error desconocido",
@@ -184,14 +185,13 @@ class ApiClient {
       const token = localStorage.getItem("auth_token");
       const headers: HeadersInit = {};
 
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
+      if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      const response = await this.fetchWithAuth(`${this.baseURL}${endpoint}`, {
+      const response = await fetch(`${this.baseURL}${endpoint}`, {
         method: "POST",
-        headers,
         body: formData,
+        credentials: "include",
+        headers,
       });
       return await response.json();
     } catch (error) {
@@ -202,14 +202,11 @@ class ApiClient {
     }
   }
 
-  // Métodos específicos de autenticación
   async login(email: string, password: string): Promise<AuthResponse> {
     try {
       const response = await fetch(`${this.baseURL}/auth/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ email, password }),
       });
@@ -246,9 +243,7 @@ class ApiClient {
         credentials: "include",
       });
 
-      if (!response.ok) {
-        return null;
-      }
+      if (!response.ok) return null;
 
       return await response.json();
     } catch {
@@ -256,9 +251,8 @@ class ApiClient {
     }
   }
 
-  // Métodos específicos de clientes
   async createClient(data: CreateClientDTO): Promise<ApiResponse<ClientDB>> {
-    return this.post<ClientDB>("/auth/meta/create-account", data);
+    return this.post<ClientDB>("/client/create", data);
   }
 
   async getClients(): Promise<ApiResponse<ClientDB[]>> {

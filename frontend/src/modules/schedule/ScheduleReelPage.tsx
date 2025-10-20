@@ -121,7 +121,7 @@ export function ScheduleReelPage() {
       return;
     }
 
-    if (!selectedClient.idInsta) {
+    if (!selectedClient.id_insta) {
       setError("El cliente no tiene un ID de Instagram configurado");
       return;
     }
@@ -134,7 +134,7 @@ export function ScheduleReelPage() {
       setUploadProgress("Creando contenedor de media...");
 
       const containerResponse = await metaApi.createMediaContainer(
-        selectedClient.idInsta,
+        selectedClient.id_insta,
         {
           upload_type: "resumable",
           media_type: "REELS",

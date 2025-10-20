@@ -30,7 +30,7 @@ export interface ClientDB {
   name: string;
   username: string;
   description?: string;
-  idInsta?: string;
+  id_insta?: string;
   access_token?: string;
 }
 
