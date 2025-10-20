@@ -7,7 +7,7 @@ export interface Publication {
   scheduledDate?: string;
   status: "scheduled" | "published";
   creationId?: string;
-  videoSize?: number; // campo extra opcional solo para frontend
+  videoSize?: number;
 }
 
 export interface CreatePublicationDto {

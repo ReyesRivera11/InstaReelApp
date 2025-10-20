@@ -1,7 +1,7 @@
 export interface MediaContainerData {
   upload_type: "resumable";
   media_type: "REELS";
-  access_token: string;
+  access_token: string | undefined;
   caption?: string;
 }
 export interface MetaApiError {

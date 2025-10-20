@@ -35,7 +35,7 @@ export interface ClientDB {
   name: string;
   username: string;
   description?: string;
-  id_insta?: string;
+  insta_id?: string;
   access_token?: string;
   long_lived_token?: string;
 }

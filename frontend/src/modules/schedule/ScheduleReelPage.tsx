@@ -22,10 +22,10 @@ import {
   Loader2,
   Upload,
 } from "lucide-react";
+import type { ClientDB } from "../../core/types";
+import { apiClient } from "../../shared/services/api/apiClients";
 import { metaApi } from "../../shared/services/api/apiMeta";
 import { appPublications } from "../../shared/services/api/apiPublications";
-import type { ClientDB, CreatePublicationDto } from "../../core/types";
-import { apiClient } from "../../shared/services/api/apiClients";
 
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
 const MIN_TITLE_LENGTH = 3;
@@ -71,7 +71,6 @@ export default function ScheduleReelPage() {
       setSelectedClientData(null);
       return;
     }
-
     setIsLoadingClient(true);
     try {
       const response = await apiClient.getClientById(
@@ -133,6 +132,42 @@ export default function ScheduleReelPage() {
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
+  function toLocalISO(date: string, time: string) {
+    // Separamos hora y minutos del input
+    const [hours, minutes] = time.split(":").map(Number);
+
+    // Creamos la fecha local exacta sin conversión implícita
+    const localDate = new Date();
+    localDate.setFullYear(Number(date.split("-")[0]));
+    localDate.setMonth(Number(date.split("-")[1]) - 1);
+    localDate.setDate(Number(date.split("-")[2]));
+    localDate.setHours(hours);
+    localDate.setMinutes(minutes);
+    localDate.setSeconds(0);
+    localDate.setMilliseconds(0);
+
+    // Calculamos el offset local (ej. -06:00)
+    const tzOffset = -localDate.getTimezoneOffset(); // minutos
+    const sign = tzOffset >= 0 ? "+" : "-";
+    const diffHours = String(Math.floor(Math.abs(tzOffset) / 60)).padStart(
+      2,
+      "0"
+    );
+    const diffMinutes = String(Math.abs(tzOffset) % 60).padStart(2, "0");
+    const offset = `${sign}${diffHours}:${diffMinutes}`;
+
+    // Formateamos manualmente para evitar saltos UTC
+    const isoLocal = `${localDate.getFullYear()}-${String(
+      localDate.getMonth() + 1
+    ).padStart(2, "0")}-${String(localDate.getDate()).padStart(
+      2,
+      "0"
+    )}T${String(localDate.getHours()).padStart(2, "0")}:${String(
+      localDate.getMinutes()
+    ).padStart(2, "0")}:00${offset}`;
+
+    return isoLocal;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,80 +187,48 @@ export default function ScheduleReelPage() {
       return;
     }
 
-    if (!selectedClientData.long_lived_token) {
-      setError("El cliente no está autenticado con Instagram");
-      return;
-    }
-
-    if (!selectedClientData.id_insta) {
-      setError("El cliente no tiene un ID de Instagram configurado");
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
-    setUploadProgress("Iniciando...");
+    setUploadProgress("Creando contenedor de media en Instagram...");
 
     try {
-      setUploadProgress("Creando contenedor de media...");
-
       const containerResponse = await metaApi.createMediaContainer(
-        selectedClientData.id_insta,
+        selectedClientData.insta_id,
         {
-          upload_type: "resumable",
           media_type: "REELS",
-          access_token: selectedClientData.long_lived_token,
           caption: description,
+          access_token: selectedClientData.long_lived_token,
+          upload_type: "resumable",
         }
       );
-      if (!containerResponse.id || !containerResponse.uri) {
-        throw new Error(
-          "No se recibió el ID del contenedor o la URL de subida"
-        );
+
+      if (!containerResponse.id) {
+        throw new Error("No se pudo crear el contenedor de media");
       }
 
-      const videoSize = videoFile.size;
-      setUploadProgress(
-        `Subiendo video (${(videoSize / (1024 * 1024)).toFixed(2)}MB)...`
-      );
+      const containerMediaId = containerResponse.id;
+      console.log(containerMediaId);
+      setUploadProgress("Enviando datos al servidor...");
 
-      const uploadResponse = await metaApi.uploadVideoBinary(
-        containerResponse.uri,
-        selectedClientData.long_lived_token,
-        videoFile,
-        videoSize
-      );
+      const formData = new FormData();
+      formData.append("client_id", clientId);
+      formData.append("title", title);
+      formData.append("description", description);
 
-      if (!uploadResponse.success) {
-        throw new Error("Error al subir el video");
-      }
+      const scheduledDateTime = toLocalISO(scheduledDate, scheduledTime);
+      console.log(scheduledDateTime);
+      formData.append("scheduled_date", scheduledDateTime);
 
-      setUploadProgress("Guardando publicación...");
+      formData.append("container_media_id", containerMediaId);
 
-      const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
-      const scheduledDateISO = scheduledDateTime.toISOString();
+      formData.append("reel", videoFile);
 
-      console.log("Fecha programada (ISO 8601):", scheduledDateISO);
+      setUploadProgress("Procesando reel en el servidor...");
 
-      const publicationData: CreatePublicationDto = {
-        client_id: Number.parseInt(clientId),
-        title,
-        description,
-        videoUrl: URL.createObjectURL(videoFile),
-        scheduledDate: scheduledDateISO,
-        status: "scheduled" as const,
-        creationId: containerResponse.id,
-        videoSize,
-      };
-
-      const saveResponse = await appPublications.createPublication(
-        publicationData
-      );
-
-      if (!saveResponse.success) {
-        throw new Error(
-          saveResponse.error || "Error al guardar la publicación"
-        );
+      const response = await appPublications.scheduleReel(formData);
+      console.log(response);
+      if (!response) {
+        throw new Error("Error al programar el reel");
       }
 
       setSuccess(true);

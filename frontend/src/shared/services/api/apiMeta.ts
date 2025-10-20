@@ -1,15 +1,14 @@
 import type {
   MediaContainerData,
   MediaContainerResponse,
-  UploadHeaders,
-  UploadResponse,
 } from "../../../core/types/meta.Type";
 
 export class MetaApi {
   private readonly graphApiBase = "https://graph.facebook.com";
 
+  // ✅ Crea el contenedor de media (igual que antes)
   async createMediaContainer(
-    instagramAccountId: string,
+    instagramAccountId: string | undefined,
     data: MediaContainerData
   ): Promise<MediaContainerResponse> {
     try {
@@ -30,57 +29,78 @@ export class MetaApi {
         try {
           const errData = await response.json();
           console.error("[MetaAPI] Error JSON:", errData);
-          if (errData.error?.message) {
-            errorMessage = errData.error.message;
-          } else {
-            errorMessage = JSON.stringify(errData);
-          }
+          errorMessage = errData.error?.message || JSON.stringify(errData);
         } catch {
-          const errText = await response.text();
-          errorMessage = errText;
+          errorMessage = await response.text();
         }
-
         throw new Error(errorMessage);
       }
 
       return (await response.json()) as MediaContainerResponse;
     } catch (error) {
-      console.error(error);
+      console.error("❌ Error al crear contenedor de media:", error);
       throw error;
     }
   }
 
-  async uploadVideoBinary(
-    uploadUrl: string,
-    token: string,
-    file: Blob | ArrayBuffer,
-    fileSize: number
-  ): Promise<UploadResponse> {
-    try {
-      const headers: UploadHeaders = {
-        Authorization: `OAuth ${token}`,
-        offset: "0",
-        file_size: String(fileSize),
-        "Content-Type": "application/octet-stream",
-      };
+  // // ✅ Subida binaria con progreso en tiempo real
+  // async uploadVideoBinary(
+  //   uploadUrl: string,
+  //   token: string | undefined,
+  //   file: Blob | File,
+  //   fileSize: number,
+  //   onProgress?: (percent: number) => void
+  // ): Promise<UploadResponse> {
+  //   return new Promise((resolve, reject) => {
+  //     try {
+  //       const xhr = new XMLHttpRequest();
+  //       xhr.open("POST", uploadUrl, true);
 
-      const response = await fetch(uploadUrl, {
-        method: "POST",
-        headers: headers,
-        body: file,
-      });
+  //       // 📦 Headers de rupload (igual que tu versión previa)
+  //       xhr.setRequestHeader("Authorization", `OAuth ${token}`);
+  //       xhr.setRequestHeader("offset", "0");
+  //       xhr.setRequestHeader("file_size", String(fileSize));
+  //       xhr.setRequestHeader("Content-Type", "application/octet-stream");
 
-      if (!response.ok) {
-        const err = await response.text();
-        throw new Error(`Error subiendo video: ${response.status} - ${err}`);
-      }
+  //       // 📊 Progreso en tiempo real
+  //       xhr.upload.onprogress = (event) => {
+  //         if (event.lengthComputable && onProgress) {
+  //           const percent = Math.round((event.loaded / event.total) * 100);
+  //           onProgress(percent);
+  //         }
+  //       };
 
-      return (await response.json()) as UploadResponse;
-    } catch (error) {
-      console.error("Error subiendo video a rupload:", error);
-      throw error;
-    }
-  }
+  //       // ✅ Subida completada
+  //       xhr.onload = () => {
+  //         if (xhr.status >= 200 && xhr.status < 300) {
+  //           try {
+  //             const json: UploadResponse = JSON.parse(xhr.responseText);
+  //             resolve(json);
+  //           } catch {
+  //             resolve({ success: true } as UploadResponse);
+  //           }
+  //         } else {
+  //           reject(
+  //             new Error(
+  //               `Error subiendo video: ${xhr.status} - ${xhr.statusText}`
+  //             )
+  //           );
+  //         }
+  //       };
+
+  //       // ❌ Error de red
+  //       xhr.onerror = () => {
+  //         reject(new Error("Error de red al subir el video"));
+  //       };
+
+  //       // 🚀 Enviar archivo binario directo
+  //       xhr.send(file);
+  //     } catch (err) {
+  //       console.error("Error en uploadVideoBinary:", err);
+  //       reject(err);
+  //     }
+  //   });
+  // }
 }
 
 export const metaApi = new MetaApi();

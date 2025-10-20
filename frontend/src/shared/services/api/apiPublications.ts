@@ -1,5 +1,17 @@
 import type { CreatePublicationDto, Publication } from "../../../core/types";
 
+export interface ScheduledReel {
+  id: number;
+  client_id: number;
+  title: string;
+  description: string;
+  scheduled_date: string;
+  container_media_id?: string;
+  status: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface PublicationResponse<T> {
   success: boolean;
   data?: T;
@@ -34,14 +46,60 @@ class AppPublications {
       credentials: "include" as RequestCredentials,
     };
 
-    const response = await fetch(url, fetchOptions);
+    try {
+      const response = await fetch(url, fetchOptions);
 
-    if (response.status === 401) {
-      localStorage.removeItem("auth_token");
-      window.location.href = "/";
+      if (response.status === 401) {
+        localStorage.removeItem("auth_token");
+        window.location.href = "/";
+      }
+
+      return response;
+    } catch (error) {
+      console.error("[v0] Fetch error:", error);
+      throw new Error("Error de conexión con el servidor");
+    }
+  }
+
+  private async parseResponse<T>(
+    response: Response
+  ): Promise<PublicationResponse<T>> {
+    const contentType = response.headers.get("content-type");
+
+    if (!contentType || !contentType.includes("application/json")) {
+      console.error("[v0] Non-JSON response received:", contentType);
+      return {
+        success: false,
+        error:
+          "El servidor no respondió correctamente. Por favor, verifica que la API esté funcionando.",
+      };
     }
 
-    return response;
+    // Check if response is ok (status 200-299)
+    if (!response.ok) {
+      try {
+        const errorData = await response.json();
+        return {
+          success: false,
+          error: errorData.error || `Error del servidor: ${response.status}`,
+        };
+      } catch {
+        return {
+          success: false,
+          error: `Error del servidor: ${response.status} ${response.statusText}`,
+        };
+      }
+    }
+
+    try {
+      return await response.json();
+    } catch (error) {
+      console.error("[v0] JSON parse error:", error);
+      return {
+        success: false,
+        error: "Error al procesar la respuesta del servidor",
+      };
+    }
   }
 
   async createPublication(
@@ -56,7 +114,7 @@ class AppPublications {
         }
       );
 
-      return await response.json();
+      return await this.parseResponse<Publication>(response);
     } catch (error) {
       return {
         success: false,
@@ -74,7 +132,7 @@ class AppPublications {
         }
       );
 
-      return await response.json();
+      return await this.parseResponse<Publication[]>(response);
     } catch (error) {
       return {
         success: false,
@@ -94,7 +152,7 @@ class AppPublications {
         }
       );
 
-      return await response.json();
+      return await this.parseResponse<Publication>(response);
     } catch (error) {
       return {
         success: false,
@@ -104,7 +162,7 @@ class AppPublications {
   }
 
   async updatePublication(
-    id: number,
+    id: string,
     data: Partial<CreatePublicationDto>
   ): Promise<PublicationResponse<Publication>> {
     try {
@@ -116,7 +174,7 @@ class AppPublications {
         }
       );
 
-      return await response.json();
+      return await this.parseResponse<Publication>(response);
     } catch (error) {
       return {
         success: false,
@@ -134,8 +192,42 @@ class AppPublications {
         }
       );
 
-      return await response.json();
+      return await this.parseResponse<void>(response);
     } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Error desconocido",
+      };
+    }
+  }
+
+  async scheduleReel(
+    formData: FormData
+  ): Promise<PublicationResponse<ScheduledReel>> {
+    try {
+      const token =
+        typeof window !== "undefined"
+          ? localStorage.getItem("auth_token")
+          : null;
+
+      const headers: HeadersInit = {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+
+      const response = await fetch(
+        `${this.baseURL}/publication/schedule-reel`,
+        {
+          method: "POST",
+          headers,
+          body: formData,
+          credentials: "include" as RequestCredentials,
+        }
+      );
+      console.log(response);
+
+      return await this.parseResponse<ScheduledReel>(response);
+    } catch (error) {
+      console.log(error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "Error desconocido",

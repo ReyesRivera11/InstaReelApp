@@ -22,7 +22,8 @@ export function PublicationsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null);
+  const [selectedPublication, setSelectedPublication] =
+    useState<Publication | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -120,7 +121,8 @@ export function PublicationsPage() {
   const filteredPublications = publications.filter((pub) => {
     const matchesSearch =
       pub.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (pub.description && pub.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (pub.description &&
+        pub.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
       getClientName(pub.client_id)
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
@@ -151,7 +153,7 @@ export function PublicationsPage() {
   const getPublicationsForDate = (date: Date) => {
     return filteredPublications.filter((pub) => {
       if (!pub.scheduledDate) return false;
-      
+
       const pubDate = new Date(pub.scheduledDate);
       return (
         pubDate.getDate() === date.getDate() &&
@@ -176,7 +178,7 @@ export function PublicationsPage() {
   // Función para formatear fecha de manera segura
   const formatPublicationDate = (dateString?: string) => {
     if (!dateString) return "No programado";
-    
+
     try {
       return new Date(dateString).toLocaleDateString("es-ES", {
         day: "2-digit",
@@ -191,7 +193,7 @@ export function PublicationsPage() {
   // Función para formatear hora de manera segura
   const formatPublicationTime = (dateString?: string) => {
     if (!dateString) return "";
-    
+
     try {
       return new Date(dateString).toLocaleTimeString("es-ES", {
         hour: "2-digit",
@@ -293,14 +295,13 @@ export function PublicationsPage() {
   return (
     <>
       {error && (
-        <Alert variant="error">
-          <AlertCircle className="h-4 w-4" />
+        <Alert variant="error" icon={<AlertCircle className="w-5 h-5" />}>
           <div className="ml-2">{error}</div>
         </Alert>
       )}
 
       {success && (
-        <Alert>
+        <Alert variant="success" icon={<CheckCircle className="w-5 h-5" />}>
           <CheckCircle className="h-4 w-4 text-green-600" />
           <div className="ml-2">
             ¡Fecha de publicación actualizada exitosamente!
