@@ -4,7 +4,7 @@ import type { Page } from "../../core/types";
 interface SidebarProps {
   currentPage: Page;
   onNavigate: (page: Page) => void;
-  onLogout: () => Promise<void>;
+  onLogout: () => void; 
 }
 
 export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {

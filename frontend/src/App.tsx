@@ -4,11 +4,11 @@ import { LoginPage } from "./modules/auth/pages/LoginPage";
 import { ClientsPage } from "./modules/clients/pages/ClientsPage";
 import DashboardPage from "./modules/dashboard/pages/DashboardPage";
 import { PublicationsPage } from "./modules/publications/pages/PublicationsPage";
-import { ScheduleReelPage } from "./modules/schedule/ScheduleReelPage";
 import { ProtectedRoute } from "./shared/components/ProtectedRoute";
 import { Sidebar } from "./shared/components/Sidebar";
 import { useApp } from "./shared/hooks/useApp";
 import { MetaCallbackPage } from "./shared/hooks/metaCallBack";
+import ScheduleReelPage from "./modules/schedule/ScheduleReelPage";
 
 function AppContent() {
   const { isAuthenticated, currentPage, setCurrentPage, logout } = useApp();

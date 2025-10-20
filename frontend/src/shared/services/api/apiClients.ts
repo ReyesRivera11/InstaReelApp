@@ -6,6 +6,7 @@ import type {
   InitiateOAuthRequest,
   InitiateOAuthResponse,
   User,
+  UpdateClientDTO,
 } from "../../../core/types";
 
 export interface ApiResponse<T> {
@@ -15,6 +16,7 @@ export interface ApiResponse<T> {
   error?: string;
   message?: string;
   clients?: ClientDB[];
+  client?: ClientDB;
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
@@ -122,10 +124,8 @@ class ApiClient {
       const response = await this.fetchWithAuth(`${this.baseURL}${endpoint}`, {
         method: "GET",
       });
-      console.log(response);
       return await response.json();
     } catch (error) {
-      console.log(error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "Error desconocido",
@@ -255,12 +255,36 @@ class ApiClient {
     return this.post<ClientDB>("/client/create", data);
   }
 
+  async getClientById(id: number): Promise<ApiResponse<{ client: ClientDB }>> {
+    try {
+      const response = await this.fetchWithAuth(
+        `${this.baseURL}/client/${id}`,
+        {
+          method: "GET",
+        }
+      );
+      return await response.json();
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Error desconocido",
+      };
+    }
+  }
+
   async getClients(): Promise<ApiResponse<ClientDB[]>> {
     return this.get<ClientDB[]>("/client/list");
   }
 
-  async deleteClient(id: string): Promise<ApiResponse<void>> {
-    return this.delete<void>(`/client/${id}`);
+  async deleteClient(id: number): Promise<ApiResponse<void>> {
+    return this.delete<void>(`/client/delete/${id}`);
+  }
+
+  async editClient(
+    id: number,
+    data: UpdateClientDTO
+  ): Promise<ApiResponse<ClientDB>> {
+    return this.put<ClientDB>(`/client/edit/${id}`, data);
   }
 
   async initiateInstagramOAuth(

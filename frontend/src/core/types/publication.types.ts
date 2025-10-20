@@ -1,22 +1,22 @@
 export interface Publication {
-  id: string;
-  clientId: string;
+  id: number;
+  client_id: number;
   title: string;
-  description: string;
+  description?: string;
   videoUrl?: string;
-  scheduledDate: string;
-  status: "scheduled" | "published" | "failed";
-  containerId?: string;
-  videoSize?: number;
+  scheduledDate?: string;
+  status: "scheduled" | "published";
+  creationId?: string;
+  videoSize?: number; // campo extra opcional solo para frontend
 }
 
 export interface CreatePublicationDto {
-  clientId: string;
+  client_id: number;
   title: string;
-  description: string;
-  videoUrl: string;
-  scheduledDate: string;
-  status: "scheduled" | "published" | "failed";
-  containerId?: string;
+  description?: string;
+  videoUrl?: string;
+  scheduledDate?: string;
+  status: "scheduled" | "published";
+  creationId?: string;
   videoSize?: number;
 }

@@ -39,8 +39,7 @@ export function MetaCallbackPage() {
 
       try {
         const result = await apiClient.createClient(payload);
-
-        if (result.success) {
+        if (result) {
           window.opener?.postMessage(
             { type: "INSTAGRAM_OAUTH_SUCCESS" },
             window.location.origin
@@ -49,7 +48,7 @@ export function MetaCallbackPage() {
           window.opener?.postMessage(
             {
               type: "INSTAGRAM_OAUTH_ERROR",
-              error: result.error || "Error desconocido",
+              error: "Error desconocido",
             },
             window.location.origin
           );

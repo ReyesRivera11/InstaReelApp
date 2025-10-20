@@ -5,6 +5,7 @@ import type { Publication } from "../../../core/types";
 import { PublicationDetailModal } from "../components/PublicationDetailModal";
 import { useApp } from "../../../shared/hooks/useApp";
 import { appPublications } from "../../../shared/services/api/apiPublications";
+
 import { AlertCircle, CheckCircle } from "lucide-react";
 import { Alert } from "../../../shared/components/ui";
 
@@ -21,8 +22,7 @@ export function PublicationsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedPublication, setSelectedPublication] =
-    useState<Publication | null>(null);
+  const [selectedPublication, setSelectedPublication] = useState<Publication | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -43,29 +43,33 @@ export function PublicationsPage() {
     }
   }, [success]);
 
-  useEffect(() => {
-    const loadPublications = async () => {
-      try {
-        setIsLoading(true);
-        const response = await appPublications.getPublications();
+  const loadPublications = async () => {
+    try {
+      setIsLoading(true);
+      const response = await appPublications.getPublications();
 
-        if (response.success && response.data) {
-          setPublications(response.data);
-        } else {
-          setError(response.error || "Error al cargar las publicaciones");
-        }
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Error al cargar las publicaciones"
-        );
-      } finally {
-        setIsLoading(false);
+      if (response.success && response.data) {
+        setPublications(response.data);
+      } else {
+        setError(response.error || "Error al cargar las publicaciones");
       }
-    };
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Error al cargar las publicaciones"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadPublications();
   }, []);
+
+  const handleUpdatePublication = async () => {
+    setSuccess(true);
+    await loadPublications();
+  };
 
   const handleViewDetails = (publication: Publication) => {
     setSelectedPublication(publication);
@@ -77,8 +81,8 @@ export function PublicationsPage() {
     setSelectedPublication(null);
   };
 
-  const getClientName = (clientId: string) => {
-    const client = clients.find((c) => c.id.toString() === clientId);
+  const getClientName = (clientId: number) => {
+    const client = clients.find((c) => c.id === clientId);
     return client
       ? `${client.name} (@${client.username})`
       : "Cliente desconocido";
@@ -116,8 +120,8 @@ export function PublicationsPage() {
   const filteredPublications = publications.filter((pub) => {
     const matchesSearch =
       pub.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      pub.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      getClientName(pub.clientId)
+      (pub.description && pub.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      getClientName(pub.client_id)
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
 
@@ -127,9 +131,10 @@ export function PublicationsPage() {
   });
 
   const sortedPublications = [...filteredPublications].sort((a, b) => {
-    return (
-      new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime()
-    );
+    // Manejar fechas opcionales
+    const dateA = a.scheduledDate ? new Date(a.scheduledDate).getTime() : 0;
+    const dateB = b.scheduledDate ? new Date(b.scheduledDate).getTime() : 0;
+    return dateB - dateA;
   });
 
   const getDaysInMonth = (date: Date) => {
@@ -145,6 +150,8 @@ export function PublicationsPage() {
 
   const getPublicationsForDate = (date: Date) => {
     return filteredPublications.filter((pub) => {
+      if (!pub.scheduledDate) return false;
+      
       const pubDate = new Date(pub.scheduledDate);
       return (
         pubDate.getDate() === date.getDate() &&
@@ -164,6 +171,35 @@ export function PublicationsPage() {
     setCurrentDate(
       new Date(currentDate.getFullYear(), currentDate.getMonth() + 1)
     );
+  };
+
+  // Función para formatear fecha de manera segura
+  const formatPublicationDate = (dateString?: string) => {
+    if (!dateString) return "No programado";
+    
+    try {
+      return new Date(dateString).toLocaleDateString("es-ES", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    } catch {
+      return "Fecha inválida";
+    }
+  };
+
+  // Función para formatear hora de manera segura
+  const formatPublicationTime = (dateString?: string) => {
+    if (!dateString) return "";
+    
+    try {
+      return new Date(dateString).toLocaleTimeString("es-ES", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "Hora inválida";
+    }
   };
 
   const renderCalendarView = () => {
@@ -202,9 +238,7 @@ export function PublicationsPage() {
           </div>
           <div className="space-y-1">
             {pubs.slice(0, 3).map((pub) => {
-              const client = clients.find(
-                (c) => c.id.toString() === pub.clientId
-              );
+              const client = clients.find((c) => c.id === pub.client_id);
               return (
                 <div
                   key={pub.id}
@@ -219,13 +253,10 @@ export function PublicationsPage() {
                 >
                   <p className="line-clamp-1">{pub.title}</p>
                   <p className="text-muted-foreground line-clamp-1 mt-0.5">
-                    {client?.name}
+                    {client?.name || "Cliente desconocido"}
                   </p>
                   <p className="text-muted-foreground mt-0.5">
-                    {new Date(pub.scheduledDate).toLocaleTimeString("es-ES", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {formatPublicationTime(pub.scheduledDate)}
                   </p>
                 </div>
               );
@@ -269,9 +300,11 @@ export function PublicationsPage() {
       )}
 
       {success && (
-        <Alert variant="success">
+        <Alert>
           <CheckCircle className="h-4 w-4 text-green-600" />
-          <div className="ml-2">¡Operación exitosa!</div>
+          <div className="ml-2">
+            ¡Fecha de publicación actualizada exitosamente!
+          </div>
         </Alert>
       )}
 
@@ -444,33 +477,22 @@ export function PublicationsPage() {
                                     {pub.title}
                                   </p>
                                   <p className="text-sm text-muted-foreground line-clamp-1 mt-1">
-                                    {pub.description}
+                                    {pub.description || "Sin descripción"}
                                   </p>
                                 </div>
                               </td>
                               <td className="p-4">
                                 <p className="text-sm">
-                                  {getClientName(pub.clientId)}
+                                  {getClientName(pub.client_id)}
                                 </p>
                               </td>
                               <td className="p-4">
                                 <div>
                                   <p className="text-sm">
-                                    {new Date(
-                                      pub.scheduledDate
-                                    ).toLocaleDateString("es-ES", {
-                                      day: "2-digit",
-                                      month: "short",
-                                      year: "numeric",
-                                    })}
+                                    {formatPublicationDate(pub.scheduledDate)}
                                   </p>
                                   <p className="text-sm text-muted-foreground">
-                                    {new Date(
-                                      pub.scheduledDate
-                                    ).toLocaleTimeString("es-ES", {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
+                                    {formatPublicationTime(pub.scheduledDate)}
                                   </p>
                                 </div>
                               </td>
@@ -577,11 +599,10 @@ export function PublicationsPage() {
 
         <PublicationDetailModal
           publication={selectedPublication}
-          client={clients.find(
-            (c) => c.id.toString() === selectedPublication?.clientId
-          )}
+          client={clients.find((c) => c.id === selectedPublication?.client_id)}
           isOpen={isModalOpen}
           onClose={handleCloseModal}
+          onUpdate={handleUpdatePublication}
         />
       </div>
     </>

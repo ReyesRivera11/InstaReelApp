@@ -1,9 +1,11 @@
+"use client";
+
 import { useState, useEffect, useCallback } from "react";
 import type { ReactNode } from "react";
-import { AppContext } from "./AppContext";
-import type { Publication, Page, User, ClientDB } from "../types";
+import type { Publication, Page, User, ClientDB, UpdateClientDTO } from "../types";
 import { storage } from "../../shared/services/storage/localStorage";
 import { apiClient } from "../../shared/services/api/apiClients";
+import { AppContext } from "./AppContext";
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -12,6 +14,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
   const [clients, setClients] = useState<ClientDB[]>([]);
   const [publications, setPublications] = useState<Publication[]>([]);
+  const [oauthCompleted, setOauthCompleted] = useState(false);
+
   const fetchUserData = useCallback(async () => {
     const token = storage.getToken();
 
@@ -26,10 +30,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const response = await apiClient.getMe();
       if (response && response.user) {
         const userData: User = {
-          id: response.user?.id,
-          email: response.user?.email,
-          firstName: response.user?.firstName,
-          lastName: response.user?.lastName,
+          id: response.user.id,
+          email: response.user.email,
+          firstName: response.user.firstName,
+          lastName: response.user.lastName,
         };
         setUser(userData);
         setIsAuthenticated(true);
@@ -86,27 +90,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await loadClients();
   };
 
-  const deleteClient = async (id: string) => {
+  const deleteClient = async (id: number) => {
     try {
       const response = await apiClient.deleteClient(id);
       if (response.success) {
-        setClients(clients.filter((c) => c.id.toString() !== id));
+        setClients(clients.filter((c) => c.id !== id));
       }
     } catch (error) {
       console.error("[v0] Error deleting client:", error);
     }
   };
 
-  const addPublication = (publication: Omit<Publication, "id" | "status">) => {
+  const updateClient = async (id: number, data: UpdateClientDTO) => {
+    try {
+      const response = await apiClient.editClient(id, data);
+      if (response.success && response.data) {
+        setClients((prev) =>
+          prev.map((c) => (c.id === id ? { ...c, ...response.data } : c))
+        );
+      } else {
+        console.error("[v0] Error updating client:", response.error);
+        throw new Error(response.error || "Error al actualizar cliente");
+      }
+    } catch (error) {
+      console.error("[v0] Error in updateClient:", error);
+      throw error;
+    }
+  };
+
+  const addPublication = (
+    publicationData: Omit<Publication, "id" | "status">
+  ) => {
     const newPublication: Publication = {
-      ...publication,
-      id: Date.now().toString(),
+      ...publicationData,
+      id: Date.now(), 
       status: "scheduled",
     };
     setPublications([...publications, newPublication]);
   };
 
-  const deletePublication = (id: string) => {
+  const deletePublication = (id: number) => {
     setPublications(publications.filter((p) => p.id !== id));
   };
 
@@ -119,7 +142,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AppContext.Provider
+    <AppContext.Provider 
       value={{
         user,
         isAuthenticated,
@@ -135,6 +158,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         publications,
         addPublication,
         deletePublication,
+        oauthCompleted,
+        setOauthCompleted,
+        updateClient
       }}
     >
       {children}

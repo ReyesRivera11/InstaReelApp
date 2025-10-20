@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import { metaApi } from "../../shared/services/api/apiMeta";
 import { appPublications } from "../../shared/services/api/apiPublications";
+import type { ClientDB, CreatePublicationDto } from "../../core/types";
+import { apiClient } from "../../shared/services/api/apiClients";
 
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
 const MIN_TITLE_LENGTH = 3;
@@ -32,9 +34,12 @@ const MIN_DESCRIPTION_LENGTH = 1;
 const MAX_DESCRIPTION_LENGTH = 2200;
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/x-msvideo"];
 
-export function ScheduleReelPage() {
+export default function ScheduleReelPage() {
   const { clients, setCurrentPage } = useApp();
   const [clientId, setClientId] = useState("");
+  const [selectedClientData, setSelectedClientData] = useState<ClientDB | null>(
+    null
+  );
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -42,6 +47,7 @@ export function ScheduleReelPage() {
   const [scheduledTime, setScheduledTime] = useState("");
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingClient, setIsLoadingClient] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string>("");
@@ -53,6 +59,37 @@ export function ScheduleReelPage() {
     date?: string;
     client?: string;
   }>({});
+
+  const handleClientChange = async (newClientId: string) => {
+    setClientId(newClientId);
+    setValidationErrors({
+      ...validationErrors,
+      client: undefined,
+    });
+
+    if (!newClientId) {
+      setSelectedClientData(null);
+      return;
+    }
+
+    setIsLoadingClient(true);
+    try {
+      const response = await apiClient.getClientById(
+        Number.parseInt(newClientId)
+      );
+      if (response.client) {
+        setSelectedClientData(response.client);
+      } else {
+        setError(response.error || "Error al obtener datos del cliente");
+        setSelectedClientData(null);
+      }
+    } catch {
+      setError("Error al cargar los datos del cliente");
+      setSelectedClientData(null);
+    } finally {
+      setIsLoadingClient(false);
+    }
+  };
 
   const validateForm = (): boolean => {
     const errors: typeof validationErrors = {};
@@ -110,18 +147,17 @@ export function ScheduleReelPage() {
       return;
     }
 
-    const selectedClient = clients.find((c) => c.id === +clientId);
-    if (!selectedClient) {
-      setError("Cliente no encontrado");
+    if (!selectedClientData) {
+      setError("No se pudieron cargar los datos del cliente");
       return;
     }
 
-    if (!selectedClient.access_token) {
+    if (!selectedClientData.long_lived_token) {
       setError("El cliente no está autenticado con Instagram");
       return;
     }
 
-    if (!selectedClient.id_insta) {
+    if (!selectedClientData.id_insta) {
       setError("El cliente no tiene un ID de Instagram configurado");
       return;
     }
@@ -134,11 +170,11 @@ export function ScheduleReelPage() {
       setUploadProgress("Creando contenedor de media...");
 
       const containerResponse = await metaApi.createMediaContainer(
-        selectedClient.id_insta,
+        selectedClientData.id_insta,
         {
           upload_type: "resumable",
           media_type: "REELS",
-          access_token: selectedClient.access_token,
+          access_token: selectedClientData.long_lived_token,
           caption: description,
         }
       );
@@ -155,7 +191,7 @@ export function ScheduleReelPage() {
 
       const uploadResponse = await metaApi.uploadVideoBinary(
         containerResponse.uri,
-        selectedClient.access_token,
+        selectedClientData.long_lived_token,
         videoFile,
         videoSize
       );
@@ -165,16 +201,20 @@ export function ScheduleReelPage() {
       }
 
       setUploadProgress("Guardando publicación...");
-      const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
 
-      const publicationData = {
-        clientId,
+      const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
+      const scheduledDateISO = scheduledDateTime.toISOString();
+
+      console.log("Fecha programada (ISO 8601):", scheduledDateISO);
+
+      const publicationData: CreatePublicationDto = {
+        client_id: Number.parseInt(clientId),
         title,
         description,
         videoUrl: URL.createObjectURL(videoFile),
-        scheduledDate: scheduledDateTime.toISOString(),
+        scheduledDate: scheduledDateISO,
         status: "scheduled" as const,
-        containerId: containerResponse.id,
+        creationId: containerResponse.id,
         videoSize,
       };
 
@@ -195,6 +235,7 @@ export function ScheduleReelPage() {
       setVideoFile(null);
       setScheduledDate("");
       setScheduledTime("");
+      setSelectedClientData(null);
       setValidationErrors({});
       setUploadProgress("");
 
@@ -205,7 +246,7 @@ export function ScheduleReelPage() {
       setError(
         err instanceof Error
           ? err.message
-          : "Error al crear el cliente. Por favor intenta de nuevo."
+          : "Error al programar el reel. Por favor intenta de nuevo."
       );
       setUploadProgress("");
     } finally {
@@ -263,6 +304,10 @@ export function ScheduleReelPage() {
     }
   }, [success]);
 
+  const getMinDate = () => {
+    return new Date().toISOString().split("T")[0];
+  };
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       {error && (
@@ -310,27 +355,38 @@ export function ScheduleReelPage() {
                 </button>
               </div>
             ) : (
-              <Select
-                id="client"
-                label="Cliente"
-                value={clientId}
-                onChange={(e) => {
-                  setClientId(e.target.value);
-                  setValidationErrors({
-                    ...validationErrors,
-                    client: undefined,
-                  });
-                }}
-                required
-                error={validationErrors.client}
-              >
-                <option value="">Selecciona un cliente</option>
-                {clients.map((client) => (
-                  <option key={client.id} value={client.id}>
-                    {client.name} (@{client.username})
-                  </option>
-                ))}
-              </Select>
+              <div className="space-y-2">
+                <Select
+                  id="client"
+                  label="Cliente"
+                  value={clientId}
+                  onChange={(e) => handleClientChange(e.target.value)}
+                  required
+                  error={validationErrors.client}
+                  disabled={isLoadingClient}
+                >
+                  <option value="">Selecciona un cliente</option>
+                  {clients.map((client) => (
+                    <option key={client.id} value={client.id.toString()}>
+                      {client.name} (@{client.username})
+                    </option>
+                  ))}
+                </Select>
+                {isLoadingClient && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Cargando datos del cliente...</span>
+                  </div>
+                )}
+                {selectedClientData && !isLoadingClient && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-900">
+                      ✓ Cliente cargado: {selectedClientData.name} (@
+                      {selectedClientData.username})
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
 
             <Input
@@ -422,7 +478,7 @@ export function ScheduleReelPage() {
                   setValidationErrors({ ...validationErrors, date: undefined });
                 }}
                 required
-                min={new Date().toISOString().split("T")[0]}
+                min={getMinDate()}
                 leftIcon={<Calendar className="w-4 h-4" />}
                 error={validationErrors.date}
                 disabled={isLoading}

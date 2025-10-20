@@ -1,25 +1,35 @@
 import { createContext } from "react";
-import type {  Publication, Page, User, ClientDB } from "../types";
+import type {
+  User,
+  ClientDB,
+  Publication,
+  Page,
+  CreateClientDTO,
+  UpdateClientDTO, // ✅ asegúrate de importar esto
+} from "../types";
 
 export interface AppContextType {
   user: User | null;
   isAuthenticated: boolean;
   setIsAuthenticated: (value: boolean) => void;
   setUser: (user: User | null) => void;
-  logout: () => Promise<void>;
+  logout: () => void;
   currentPage: Page;
   setCurrentPage: (page: Page) => void;
   clients: ClientDB[];
-  addClient: (client: {
-    name: string;
-    instagramHandle: string;
-    description?: string;
-  }) => Promise<void>;
-  deleteClient: (id: string) => void;
+  addClient: (data?: CreateClientDTO) => Promise<void>;
+  deleteClient: (id: number) => void;
   loadClients: () => Promise<void>;
+
+  /** ✅ Nuevo método para editar cliente */
+  updateClient: (id: number, data: UpdateClientDTO) => Promise<void>;
+
   publications: Publication[];
   addPublication: (publication: Omit<Publication, "id" | "status">) => void;
-  deletePublication: (id: string) => void;
+  deletePublication: (id: number) => void;
+  oauthCompleted: boolean;
+  setOauthCompleted: (value: boolean) => void;
 }
+
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);

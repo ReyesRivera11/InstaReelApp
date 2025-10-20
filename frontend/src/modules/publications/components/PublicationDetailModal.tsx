@@ -1,10 +1,16 @@
+"use client";
+
+import { useState } from "react";
 import type { Publication, ClientDB } from "../../../core/types";
+import { appPublications } from "../../../shared/services/api/apiPublications";
+import { Button, Input } from "../../../shared/components/ui";
 
 interface PublicationDetailModalProps {
   publication: Publication | null;
   client: ClientDB | undefined;
   isOpen: boolean;
   onClose: () => void;
+  onUpdate?: () => void;
 }
 
 export function PublicationDetailModal({
@@ -12,8 +18,68 @@ export function PublicationDetailModal({
   client,
   isOpen,
   onClose,
+  onUpdate,
 }: PublicationDetailModalProps) {
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [editedDate, setEditedDate] = useState("");
+  const [editedTime, setEditedTime] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
   if (!publication || !isOpen) return null;
+
+  const handleEditClick = () => {
+    // Verificar que scheduledDate existe antes de usarlo
+    if (!publication.scheduledDate) {
+      setError("No hay fecha programada para editar");
+      return;
+    }
+
+    const date = new Date(publication.scheduledDate);
+    const dateStr = date.toISOString().split("T")[0];
+    const timeStr = date.toTimeString().slice(0, 5);
+    setEditedDate(dateStr);
+    setEditedTime(timeStr);
+    setIsEditMode(true);
+    setError(null);
+  };
+
+  const handleUpdateDate = async () => {
+    if (!editedDate || !editedTime) {
+      setError("Por favor ingresa fecha y hora válidas");
+      return;
+    }
+
+    setIsUpdating(true);
+    setError(null);
+
+    try {
+      const newScheduledDate = new Date(
+        `${editedDate}T${editedTime}`
+      ).toISOString();
+
+      const response = await appPublications.updatePublication(publication.id, {
+        scheduledDate: newScheduledDate,
+      });
+
+      if (response.success) {
+        setIsEditMode(false);
+        onUpdate?.();
+        onClose();
+      } else {
+        setError(response.error || "Error al actualizar la fecha");
+      }
+    } catch {
+      setError("Error al actualizar la fecha de publicación");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditMode(false);
+    setError(null);
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -44,6 +110,37 @@ export function PublicationDetailModal({
     }
   };
 
+  // Función para formatear fecha de manera segura
+  const formatScheduledDate = (dateString?: string) => {
+    if (!dateString) return "No programado";
+
+    try {
+      return new Date(dateString).toLocaleDateString("es-ES", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch {
+      return "Fecha inválida";
+    }
+  };
+
+  // Función para formatear hora de manera segura
+  const formatScheduledTime = (dateString?: string) => {
+    if (!dateString) return "No programado";
+
+    try {
+      return new Date(dateString).toLocaleTimeString("es-ES", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+    } catch {
+      return "Hora inválida";
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
@@ -58,7 +155,9 @@ export function PublicationDetailModal({
             <div className="flex-1">
               <h2>{publication.title}</h2>
               <p className="text-sm text-muted-foreground mt-2">
-                Detalles completos de la publicación programada
+                {isEditMode
+                  ? "Editando fecha de publicación"
+                  : "Detalles completos de la publicación programada"}
               </p>
             </div>
             {getStatusBadge(publication.status)}
@@ -66,6 +165,12 @@ export function PublicationDetailModal({
         </div>
 
         <div className="p-6 space-y-6">
+          {error && (
+            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
+          )}
+
           <div className="flex items-start gap-4 p-4 bg-muted/50 rounded-lg">
             <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center flex-shrink-0">
               <svg
@@ -195,7 +300,7 @@ export function PublicationDetailModal({
               </span>
             </div>
             <div className="p-4 bg-muted/50 rounded-lg whitespace-pre-wrap">
-              {publication.description}
+              {publication.description || "Sin descripción"}
             </div>
           </div>
 
@@ -225,17 +330,18 @@ export function PublicationDetailModal({
                   Fecha Programada
                 </span>
               </div>
-              <div className="p-4 bg-muted/50 rounded-lg">
-                {new Date(publication.scheduledDate).toLocaleDateString(
-                  "es-ES",
-                  {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  }
-                )}
-              </div>
+              {isEditMode ? (
+                <Input
+                  type="date"
+                  value={editedDate}
+                  onChange={(e) => setEditedDate(e.target.value)}
+                  className="w-full"
+                />
+              ) : (
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  {formatScheduledDate(publication.scheduledDate)}
+                </div>
+              )}
             </div>
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -252,38 +358,66 @@ export function PublicationDetailModal({
                   Hora Programada
                 </span>
               </div>
-              <div className="p-4 bg-muted/50 rounded-lg">
-                {new Date(publication.scheduledDate).toLocaleTimeString(
-                  "es-ES",
-                  {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                  }
-                )}
-              </div>
+              {isEditMode ? (
+                <Input
+                  type="time"
+                  value={editedTime}
+                  onChange={(e) => setEditedTime(e.target.value)}
+                  className="w-full"
+                />
+              ) : (
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  {formatScheduledTime(publication.scheduledDate)}
+                </div>
+              )}
             </div>
           </div>
 
           <div className="flex gap-3 pt-4 border-t border-border">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors"
-            >
-              Cerrar
-            </button>
-            <button
-              disabled={publication.status !== "scheduled"}
-              className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Editar
-            </button>
-            <button
-              disabled={publication.status === "published"}
-              className="flex-1 px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancelar Publicación
-            </button>
+            {isEditMode ? (
+              <>
+                <Button
+                  onClick={handleCancelEdit}
+                  variant="outline"
+                  className="flex-1 bg-transparent"
+                  disabled={isUpdating}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleUpdateDate}
+                  className="flex-1"
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? "Guardando..." : "Guardar Cambios"}
+                </Button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={onClose}
+                  className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors"
+                >
+                  Cerrar
+                </button>
+                <button
+                  onClick={handleEditClick}
+                  disabled={
+                    publication.status !== "scheduled" ||
+                    !publication.scheduledDate
+                  }
+                  className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Editar Fecha
+                </button>
+                <button
+                  disabled={publication.status === "published"}
+                  className="flex-1 px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancelar Publicación
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -8,13 +8,14 @@ import { Input } from "../../../shared/components/ui/Input";
 import { Alert } from "../../../shared/components/ui/Alert";
 import { Icons } from "../../../shared/components/icons";
 import { AlertCircle, CheckCircle } from "lucide-react";
+import { useApp } from "../../../shared/hooks/useApp";
 
 interface AddClientModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: {
     name: string;
-    instagramHandle: string;
+    username: string;
     description?: string;
   }) => Promise<void>;
 }
@@ -25,6 +26,7 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const { setOauthCompleted } = useApp();
 
   const [validationErrors, setValidationErrors] = useState<{
     name?: string;
@@ -53,7 +55,8 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
         setSuccess(true);
         setTimeout(() => {
           handleReset();
-          onClose();
+          // Set flag in context to trigger modal close and reload in parent
+          setOauthCompleted(true);
         }, 1500);
       } else if (event.data.type === "INSTAGRAM_OAUTH_ERROR") {
         setError(event.data.error || "Error en la autenticación de Instagram");
@@ -62,7 +65,7 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
 
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [onClose]);
+  }, [setOauthCompleted]);
 
   const validateName = (value: string) => {
     if (!value.trim()) return "Requerido";
@@ -127,7 +130,6 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
         extras: JSON.stringify({ setup: { channel: "IG_API_ONBOARDING" } }),
       }).toString();
 
-    // 🔹 Abre la ventana centrada
     const width = 600;
     const height = 700;
     const left = window.screen.width / 2 - width / 2;

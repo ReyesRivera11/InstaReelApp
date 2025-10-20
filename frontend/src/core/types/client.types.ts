@@ -2,9 +2,9 @@ export interface CreateClientDTO {
   name: string;
   username: string;
   description?: string;
-  access_token: string;
-  expires_in: string;
-  long_lived_token: string;
+  access_token?: string;
+  expires_in?: string;
+  long_lived_token?: string;
 }
 export interface InitiateOAuthRequest {
   name: string;
@@ -19,6 +19,11 @@ export interface ClientView {
   access_token: string;
   username: string;
 }
+export interface UpdateClientDTO {
+  name?: string;
+  username?: string;
+  description?: string;
+}
 export interface InitiateOAuthResponse {
   success: boolean;
   authUrl?: string;
@@ -32,6 +37,7 @@ export interface ClientDB {
   description?: string;
   id_insta?: string;
   access_token?: string;
+  long_lived_token?: string;
 }
 
 export interface User {
