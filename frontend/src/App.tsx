@@ -1,3 +1,4 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppProvider } from "./core/context/AppProvider";
 import { LoginPage } from "./modules/auth/pages/LoginPage";
 import { ClientsPage } from "./modules/clients/pages/ClientsPage";
@@ -7,6 +8,7 @@ import { ScheduleReelPage } from "./modules/schedule/ScheduleReelPage";
 import { ProtectedRoute } from "./shared/components/ProtectedRoute";
 import { Sidebar } from "./shared/components/Sidebar";
 import { useApp } from "./shared/hooks/useApp";
+import { MetaCallbackPage } from "./shared/hooks/metaCallBack";
 
 function AppContent() {
   const { isAuthenticated, currentPage, setCurrentPage, logout } = useApp();
@@ -39,7 +41,12 @@ function AppContent() {
 export default function App() {
   return (
     <AppProvider>
-      <AppContent />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<AppContent />} />
+          <Route path="/meta/callback" element={<MetaCallbackPage />} />
+        </Routes>
+      </BrowserRouter>
     </AppProvider>
   );
 }

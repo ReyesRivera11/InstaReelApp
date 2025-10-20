@@ -11,7 +11,7 @@ import { useApp } from "../../../shared/hooks/useApp";
 import { AlertCircle, CheckCircle } from "lucide-react";
 
 export function ClientsPage() {
-  const { clients, addClient, deleteClient } = useApp();
+  const { clients, addClient, deleteClient, loadClients } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -39,7 +39,6 @@ export function ClientsPage() {
     const loadClients = async () => {
       try {
         setIsLoading(true);
-        // Clients are already loaded from AppProvider
         await new Promise((resolve) => setTimeout(resolve, 500));
       } catch (err) {
         setError(
@@ -68,6 +67,15 @@ export function ClientsPage() {
       throw err;
     }
   };
+  const handleCloseModal = async () => {
+    setIsModalOpen(false);
+    try {
+      await loadClients();
+    } catch (error) {
+      console.log(error);
+      setError("Error al recargar clientes.");
+    }
+  };
 
   return (
     <>
@@ -78,10 +86,7 @@ export function ClientsPage() {
       )}
 
       {success && (
-        <Alert
-          variant="success"
-          icon={<CheckCircle className="w-5 h-5" />}
-        >
+        <Alert variant="success" icon={<CheckCircle className="w-5 h-5" />}>
           ¡Cliente agregado exitosamente!
         </Alert>
       )}
@@ -107,7 +112,7 @@ export function ClientsPage() {
 
         <AddClientModal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          onClose={handleCloseModal}
           onSubmit={handleAddClient}
         />
 

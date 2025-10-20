@@ -21,7 +21,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     },
   ]);
   const [publications, setPublications] = useState<Publication[]>([]);
-
   const fetchUserData = useCallback(async () => {
     const token = storage.getToken();
 
@@ -58,11 +57,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const loadClients = useCallback(async () => {
     try {
       const response = await apiClient.getClients();
-
+      console.log(response);
       if (response.success && response.data) {
         const transformedClients: ClientDB[] = response.data.map(
           (clientDB: ClientDB) => ({
-            id: clientDB.id, // 👈 mantenerlo numérico, sin toString()
+            id: clientDB.id, 
             name: clientDB.name,
             description: clientDB.description,
             idInsta: clientDB.idInsta,

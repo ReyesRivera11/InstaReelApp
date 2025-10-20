@@ -1,18 +1,10 @@
-// export interface Client {
-//   id: string;
-//   name: string;
-//   instagramHandle: string;
-//   description?: string;
-//   createdAt: string;
-//   accessToken?: string;
-//   pageId?: string;
-//   instagramId?: string;
-//   isAuthenticated?: boolean;
-// }
 export interface CreateClientDTO {
   name: string;
   username: string;
   description?: string;
+  access_token: string;
+  expires_in: string;
+  long_lived_token: string;
 }
 export interface InitiateOAuthRequest {
   name: string;

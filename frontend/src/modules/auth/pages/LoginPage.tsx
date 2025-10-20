@@ -43,7 +43,7 @@ export function LoginPage() {
 
     try {
       const response = await apiClient.login(email, password);
-
+      console.log(response.accessToken);
       storage.setToken(response.accessToken);
       setUser(response.user);
       setSuccess(true);

@@ -73,15 +73,11 @@ class ApiClient {
 
       const data = await response.json();
       const newToken = data.accessToken;
-
       localStorage.setItem("auth_token", newToken);
-
       this.onRefreshed(newToken);
       this.isRefreshing = false;
-
       return newToken;
-    } catch (error) {
-      console.error("[v0] Token refresh error:", error);
+    } catch {
       this.isRefreshing = false;
       localStorage.removeItem("auth_token");
       window.location.href = "/";
@@ -95,6 +91,7 @@ class ApiClient {
   ): Promise<Response> {
     const fetchOptions = {
       ...options,
+      headers: this.getHeaders(),
       credentials: "include" as RequestCredentials,
     };
 
@@ -102,10 +99,12 @@ class ApiClient {
 
     if (response.status === 401) {
       const newToken = await this.handleUnauthorized();
-
       if (newToken) {
-        const headers = { ...options.headers } as Record<string, string>;
-        headers["Authorization"] = `Bearer ${newToken}`;
+        const headers = {
+          ...options.headers,
+          Authorization: `Bearer ${newToken}`,
+        } as HeadersInit;
+
         response = await fetch(url, {
           ...options,
           headers,
@@ -117,14 +116,13 @@ class ApiClient {
     return response;
   }
 
+  // Métodos HTTP genéricos
   async get<T>(endpoint: string): Promise<ApiResponse<T>> {
     try {
       const response = await this.fetchWithAuth(`${this.baseURL}${endpoint}`, {
         method: "GET",
-        headers: this.getHeaders(),
-        credentials: "include", // Ensure cookies are sent
       });
-
+      console.log(response);
       return await response.json();
     } catch (error) {
       return {
@@ -138,11 +136,8 @@ class ApiClient {
     try {
       const response = await this.fetchWithAuth(`${this.baseURL}${endpoint}`, {
         method: "POST",
-        headers: this.getHeaders(),
         body: JSON.stringify(data),
-        credentials: "include", // Ensure cookies are sent
       });
-
       return await response.json();
     } catch (error) {
       return {
@@ -156,11 +151,8 @@ class ApiClient {
     try {
       const response = await this.fetchWithAuth(`${this.baseURL}${endpoint}`, {
         method: "PUT",
-        headers: this.getHeaders(),
         body: JSON.stringify(data),
-        credentials: "include", // Ensure cookies are sent
       });
-
       return await response.json();
     } catch (error) {
       return {
@@ -174,10 +166,7 @@ class ApiClient {
     try {
       const response = await this.fetchWithAuth(`${this.baseURL}${endpoint}`, {
         method: "DELETE",
-        headers: this.getHeaders(),
-        credentials: "include", // Ensure cookies are sent
       });
-
       return await response.json();
     } catch (error) {
       return {
@@ -203,9 +192,7 @@ class ApiClient {
         method: "POST",
         headers,
         body: formData,
-        credentials: "include", 
       });
-
       return await response.json();
     } catch (error) {
       return {
@@ -215,6 +202,7 @@ class ApiClient {
     }
   }
 
+  // Métodos específicos de autenticación
   async login(email: string, password: string): Promise<AuthResponse> {
     try {
       const response = await fetch(`${this.baseURL}/auth/login`, {
@@ -232,9 +220,7 @@ class ApiClient {
       }
 
       const data = await response.json();
-
       localStorage.setItem("auth_token", data.accessToken);
-
       return data;
     } catch (error) {
       if (error instanceof TypeError && error.message === "Failed to fetch") {
@@ -245,44 +231,12 @@ class ApiClient {
   }
 
   async logout(): Promise<void> {
-    try {
-      await fetch(`${this.baseURL}/auth/logout`, {
-        method: "POST",
-        headers: this.getHeaders(),
-        credentials: "include",
-      });
-    } catch (error) {
-      console.error("Error during logout:", error);
-    }
+    await this.post("/auth/logout");
+    localStorage.removeItem("auth_token");
   }
 
   async getMe(): Promise<ApiResponse<GetMeResponse>> {
-    const token = localStorage.getItem("auth_token");
-
-    if (!token) {
-      return {
-        success: false,
-        error: "No authentication token found",
-      };
-    }
-
-    try {
-      const response = await this.fetchWithAuth(`${this.baseURL}/auth/me`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        credentials: "include",
-      });
-
-      return await response.json();
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Error desconocido",
-      };
-    }
+    return this.get<GetMeResponse>("/auth/me");
   }
 
   async refreshToken(): Promise<{ accessToken: string } | null> {
@@ -297,138 +251,28 @@ class ApiClient {
       }
 
       return await response.json();
-    } catch (error) {
-      console.error("Error refreshing token:", error);
+    } catch {
       return null;
     }
   }
+
+  // Métodos específicos de clientes
   async createClient(data: CreateClientDTO): Promise<ApiResponse<ClientDB>> {
-    const token = localStorage.getItem("auth_token");
-
-    if (!token) {
-      return {
-        success: false,
-        error: "No authentication token found",
-      };
-    }
-
-    try {
-      const response = await this.fetchWithAuth(
-        `${this.baseURL}/client/create`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(data),
-          credentials: "include",
-        }
-      );
-
-      return await response.json();
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Error desconocido",
-      };
-    }
+    return this.post<ClientDB>("/auth/meta/create-account", data);
   }
+
   async getClients(): Promise<ApiResponse<ClientDB[]>> {
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
-
-    if (!token) {
-      return {
-        success: false,
-        error: "No authentication token found",
-      };
-    }
-
-    try {
-      const response = await this.fetchWithAuth(`${this.baseURL}/client/list`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        credentials: "include",
-      });
-
-      return await response.json();
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Error desconocido",
-      };
-    }
+    return this.get<ClientDB[]>("/client/list");
   }
+
   async deleteClient(id: string): Promise<ApiResponse<void>> {
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
-
-    if (!token) {
-      return {
-        success: false,
-        error: "No authentication token found",
-      };
-    }
-
-    try {
-      const response = await this.fetchWithAuth(
-        `${this.baseURL}/client/${id}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          credentials: "include",
-        }
-      );
-
-      return await response.json();
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Error desconocido",
-      };
-    }
+    return this.delete<void>(`/client/${id}`);
   }
+
   async initiateInstagramOAuth(
     data: InitiateOAuthRequest
   ): Promise<InitiateOAuthResponse> {
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
-
-    if (!token) {
-      return {
-        success: false,
-        error: "No authentication token found",
-      };
-    }
-
-    try {
-      const response = await this.fetchWithAuth(
-        `${this.baseURL}/client/initiate-oauth`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(data),
-          credentials: "include",
-        }
-      );
-
-      return await response.json();
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Error desconocido",
-      };
-    }
+    return this.post<InitiateOAuthResponse>("/client/initiate-oauth", data);
   }
 }
 

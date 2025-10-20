@@ -8,7 +8,6 @@ import { Input } from "../../../shared/components/ui/Input";
 import { Alert } from "../../../shared/components/ui/Alert";
 import { Icons } from "../../../shared/components/icons";
 import { AlertCircle, CheckCircle } from "lucide-react";
-import { apiClient } from "../../../shared/services/api/apiClients";
 
 interface AddClientModalProps {
   isOpen: boolean;
@@ -24,7 +23,6 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
   const [name, setName] = useState("");
   const [instagramHandle, setInstagramHandle] = useState("");
   const [description, setDescription] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -35,32 +33,28 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
 
   useEffect(() => {
     if (error) {
-      const timer = setTimeout(() => {
-        setError(null);
-      }, 3000);
+      const timer = setTimeout(() => setError(null), 3000);
       return () => clearTimeout(timer);
     }
   }, [error]);
 
   useEffect(() => {
     if (success) {
-      const timer = setTimeout(() => {
-        setSuccess(false);
-      }, 3000);
+      const timer = setTimeout(() => setSuccess(false), 3000);
       return () => clearTimeout(timer);
     }
   }, [success]);
 
+  // ✅ Escucha los mensajes desde la ventana popup del callback
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Verify origin for security
       if (event.origin !== window.location.origin) return;
 
       if (event.data.type === "INSTAGRAM_OAUTH_SUCCESS") {
         setSuccess(true);
         setTimeout(() => {
           handleReset();
-          onClose();
+          onClose(); // 🔒 Cierra el modal automáticamente
         }, 1500);
       } else if (event.data.type === "INSTAGRAM_OAUTH_ERROR") {
         setError(event.data.error || "Error en la autenticación de Instagram");
@@ -72,31 +66,18 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
   }, [onClose]);
 
   const validateName = (value: string) => {
-    if (!value.trim()) {
-      return "Requerido";
-    }
-    if (value.length > 100) {
-      return "Máximo 100 caracteres";
-    }
+    if (!value.trim()) return "Requerido";
+    if (value.length > 100) return "Máximo 100 caracteres";
     return undefined;
   };
 
   const validateInstagramHandle = (value: string) => {
-    if (!value.trim()) {
-      return "Requerido";
-    }
-    if (value.includes("@")) {
-      return "No debe incluir @";
-    }
-    if (value.length < 3) {
-      return "Mínimo 3 caracteres";
-    }
-    if (value.length > 30) {
-      return "Máximo 30 caracteres";
-    }
-    if (!/^[a-zA-Z0-9._]+$/.test(value)) {
+    if (!value.trim()) return "Requerido";
+    if (value.includes("@")) return "No debe incluir @";
+    if (value.length < 3) return "Mínimo 3 caracteres";
+    if (value.length > 30) return "Máximo 30 caracteres";
+    if (!/^[a-zA-Z0-9._]+$/.test(value))
       return "Solo letras, números, puntos y guiones bajos";
-    }
     return undefined;
   };
 
@@ -123,47 +104,43 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
     const handleError = validateInstagramHandle(instagramHandle);
 
     if (nameError || handleError) {
-      setValidationErrors({
-        name: nameError,
-        instagramHandle: handleError,
-      });
+      setValidationErrors({ name: nameError, instagramHandle: handleError });
       setError("Por favor corrige los errores en el formulario");
       return;
     }
 
-    setIsSubmitting(true);
-    setError(null);
+    // 🔹 Guarda los datos antes de abrir la ventana de Meta
+    const clientData = {
+      name,
+      username: instagramHandle,
+      description,
+    };
+    localStorage.setItem("pending_client", JSON.stringify(clientData));
 
-    try {
-      const response = await apiClient.initiateInstagramOAuth({
-        name,
-        username: instagramHandle,
-        description: description || undefined,
-      });
+    // 🔹 Construye la URL de Meta OAuth
+    const oauthUrl =
+      "https://www.facebook.com/dialog/oauth?" +
+      new URLSearchParams({
+        client_id: "25204565109180194",
+        display: "page",
+        redirect_uri: "https://73dc18552c43.ngrok-free.app/meta/callback",
+        response_type: "token",
+        scope:
+          "instagram_basic,instagram_content_publish,instagram_manage_comments,instagram_manage_insights,pages_show_list,pages_read_engagement",
+        extras: JSON.stringify({ setup: { channel: "IG_API_ONBOARDING" } }),
+      }).toString();
 
-      if (!response.success || !response.authUrl) {
-        throw new Error(response.error || "Error al iniciar autenticación");
-      }
+    // 🔹 Abre la ventana centrada
+    const width = 600;
+    const height = 700;
+    const left = window.screen.width / 2 - width / 2;
+    const top = window.screen.height / 2 - height / 2;
 
-      const width = 600;
-      const height = 700;
-      const left = window.screen.width / 2 - width / 2;
-      const top = window.screen.height / 2 - height / 2;
-
-      window.open(
-        response.authUrl,
-        "instagram_oauth",
-        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
-      );
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Error al crear el cliente. Por favor intenta de nuevo."
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+    window.open(
+      oauthUrl,
+      "instagram_oauth",
+      `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+    );
   };
 
   const handleReset = () => {
@@ -218,7 +195,6 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
               placeholder="Nombre de la empresa o marca"
               value={name}
               onChange={handleNameChange}
-              disabled={isSubmitting}
             />
             {validationErrors.name && (
               <p className="text-sm text-red-600 dark:text-red-400 mt-1">
@@ -234,7 +210,6 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
               placeholder="usuario_instagram"
               value={instagramHandle}
               onChange={handleInstagramHandleChange}
-              disabled={isSubmitting}
               leftIcon={<span className="text-muted-foreground">@</span>}
             />
             {validationErrors.instagramHandle && (
@@ -251,7 +226,6 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
               placeholder="Breve descripción del cliente (opcional)"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              disabled={isSubmitting}
             />
             {description.length > 0 && (
               <p className="text-sm text-muted-foreground mt-1">
@@ -266,23 +240,13 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
           </div>
 
           <div className="flex flex-col-reverse sm:flex-row gap-2 justify-end pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCancel}
-              disabled={isSubmitting}
-            >
+            <Button type="button" variant="outline" onClick={handleCancel}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
-                "Conectando..."
-              ) : (
-                <>
-                  <Icons.Instagram />
-                  Conectar con Instagram
-                </>
-              )}
+
+            <Button type="submit">
+              <Icons.Instagram />
+              Conectar con Instagram
             </Button>
           </div>
         </form>

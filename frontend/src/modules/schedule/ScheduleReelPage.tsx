@@ -25,11 +25,11 @@ import {
 import { metaApi } from "../../shared/services/api/apiMeta";
 import { appPublications } from "../../shared/services/api/apiPublications";
 
-const MAX_VIDEO_SIZE = 100 * 1024 * 1024; 
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
 const MIN_TITLE_LENGTH = 3;
 const MAX_TITLE_LENGTH = 100;
 const MIN_DESCRIPTION_LENGTH = 1;
-const MAX_DESCRIPTION_LENGTH = 2200; 
+const MAX_DESCRIPTION_LENGTH = 2200;
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/x-msvideo"];
 
 export function ScheduleReelPage() {
@@ -116,7 +116,7 @@ export function ScheduleReelPage() {
       return;
     }
 
-    if ( !selectedClient.access_token) {
+    if (!selectedClient.access_token) {
       setError("El cliente no está autenticado con Instagram");
       return;
     }
@@ -132,10 +132,6 @@ export function ScheduleReelPage() {
 
     try {
       setUploadProgress("Creando contenedor de media...");
-      console.log(
-        "[v0] Creating media container for Instagram ID:",
-        selectedClient.idInsta
-      );
 
       const containerResponse = await metaApi.createMediaContainer(
         selectedClient.idInsta,
@@ -152,13 +148,10 @@ export function ScheduleReelPage() {
         );
       }
 
-      console.log("[v0] Container created:", containerResponse.id);
-
       const videoSize = videoFile.size;
       setUploadProgress(
         `Subiendo video (${(videoSize / (1024 * 1024)).toFixed(2)}MB)...`
       );
-      console.log("[v0] Uploading video, size:", videoSize, "bytes");
 
       const uploadResponse = await metaApi.uploadVideoBinary(
         containerResponse.uri,
@@ -170,8 +163,6 @@ export function ScheduleReelPage() {
       if (!uploadResponse.success) {
         throw new Error("Error al subir el video");
       }
-
-      console.log("[v0] Video uploaded successfully");
 
       setUploadProgress("Guardando publicación...");
       const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
@@ -197,8 +188,6 @@ export function ScheduleReelPage() {
         );
       }
 
-      console.log("[v0] Publication saved successfully");
-
       setSuccess(true);
       setClientId("");
       setTitle("");
@@ -209,7 +198,6 @@ export function ScheduleReelPage() {
       setValidationErrors({});
       setUploadProgress("");
 
-      // Redirect after 2 seconds
       setTimeout(() => {
         setCurrentPage("publications");
       }, 2000);
