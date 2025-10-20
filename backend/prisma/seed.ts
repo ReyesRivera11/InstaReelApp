@@ -6,8 +6,8 @@ async function main() {
     where: { email: "usuario@ejemplo.com" },
     update: {},
     create: {
-      firstName: "John",
-      lastName: "Doe",
+      first_name: "John",
+      last_name: "Doe",
       email: "usuario@ejemplo.com",
       password: await hashPassword("123456"),
     },

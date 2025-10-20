@@ -1,6 +1,6 @@
 import cors from "cors";
 
-const ACCPETED_ORIGINS = ["http://localhost:5173"];
+const ACCPETED_ORIGINS = ["http://localhost:5173", 'https://73dc18552c43.ngrok-free.app'];
 
 export const corsMiddleware = ({ acceptedOrigins = ACCPETED_ORIGINS } = {}) =>
   cors({
