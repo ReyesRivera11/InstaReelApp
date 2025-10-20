@@ -23,7 +23,5 @@ export const corsMiddleware = ({ acceptedOrigins = ACCPETED_ORIGINS } = {}) =>
         description: "Origin not allowed",
       }));
     },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
   });

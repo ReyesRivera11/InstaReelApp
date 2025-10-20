@@ -29,6 +29,25 @@ model client {
   name             String
   username         String  @unique
   description      String?
-  id_insta         String?
+  insta_id         String?
   long_lived_token String? @db.VarChar(250)
+
+  instagram_reels instagram_reels[]
+}
+
+model instagram_reels {
+  id             Int        @id @default(autoincrement())
+  client_id      Int
+  client         client     @relation(fields: [client_id], references: [id])
+  status         ReelStatus @default(SCHEDULED)
+  title          String
+  description    String?
+  video_url      String?
+  scheduled_date String?
+  creation_id    String?
+}
+
+enum ReelStatus {
+  PUBLISHED
+  SCHEDULED
 }

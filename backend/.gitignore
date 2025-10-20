@@ -97,3 +97,4 @@ temp/
 # Production build (si usas algún builder específico)
 out/
 /src/generated/prisma
+.vercel

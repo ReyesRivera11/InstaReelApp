@@ -21,7 +21,6 @@ export class ClientModel {
         name: true,
         username: true,
         description: true,
-        id_insta: true,
       },
     });
 
@@ -39,7 +38,7 @@ export class ClientModel {
           username,
           description,
           long_lived_token,
-          id_insta: insta_id,
+          insta_id,
         },
       });
     } catch (error) {

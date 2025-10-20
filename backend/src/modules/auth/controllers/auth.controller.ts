@@ -26,7 +26,7 @@ export class AuthController {
     if (cookies?.jwt) {
       res.clearCookie("jwt", {
         httpOnly: true,
-        sameSite: "strict",
+        sameSite: "none",
         secure: true,
       });
     }
@@ -34,7 +34,7 @@ export class AuthController {
     res.cookie("jwt", refreshToken, {
       httpOnly: true,
       secure: true,
-      sameSite: "strict",
+      sameSite: "none",
       maxAge: Number(JWT_REFRESH_TOKEN_EXPIRES_IN) * 24 * 60 * 60 * 1000,
     });
 
