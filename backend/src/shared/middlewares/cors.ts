@@ -1,6 +1,11 @@
 import cors from "cors";
+import { AppError } from "../../core/errors/AppError";
+import { HttpCode } from "../enums/HttpCode";
 
-const ACCPETED_ORIGINS = ["http://localhost:5173", 'https://73dc18552c43.ngrok-free.app'];
+const ACCPETED_ORIGINS = [
+  "http://localhost:5173",
+  "https://instareel-app.netlify.app",
+];
 
 export const corsMiddleware = ({ acceptedOrigins = ACCPETED_ORIGINS } = {}) =>
   cors({
@@ -13,7 +18,10 @@ export const corsMiddleware = ({ acceptedOrigins = ACCPETED_ORIGINS } = {}) =>
         return cb(null, true);
       }
 
-      return cb(new Error("Not allowed by CORS"));
+      return cb(new AppError({
+        httpCode: HttpCode.FORBIDDEN,
+        description: "Origin not allowed",
+      }));
     },
-    credentials: true,
+    credentials: true
   });
