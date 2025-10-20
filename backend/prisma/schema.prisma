@@ -36,15 +36,15 @@ model client {
 }
 
 model instagram_reels {
-  id             Int        @id @default(autoincrement())
-  client_id      Int
-  client         client     @relation(fields: [client_id], references: [id])
-  status         ReelStatus @default(SCHEDULED)
-  title          String
-  description    String?
-  video_url      String?
-  scheduled_date String?
-  creation_id    String?
+  id                 Int        @id @default(autoincrement())
+  client_id          Int
+  client             client     @relation(fields: [client_id], references: [id])
+  status             ReelStatus @default(SCHEDULED)
+  title              String
+  description        String?
+  video_url          String?
+  scheduled_date     DateTime?
+  container_media_id String?    @unique
 }
 
 enum ReelStatus {
