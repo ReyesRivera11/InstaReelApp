@@ -4,6 +4,28 @@ import { AppError } from "../../../core/errors/AppError";
 import { HttpCode } from "../../../shared/enums/HttpCode";
 
 export class PublicationModel {
+  static async getPublicationByMediaId(media_id: string) {
+    const publication = await prisma.instagram_reels.findUnique({
+      where: { container_media_id: media_id },
+    });
+
+    return publication;
+  }
+
+  static async getAllPublications() {
+    const publications = await prisma.instagram_reels.findMany({});
+
+    return publications;
+  }
+
+  static async getPublicationById(id: number) {
+    const publication = await prisma.instagram_reels.findUnique({
+      where: { id },
+    });
+
+    return publication;
+  }
+
   static async create(
     client_id: number,
     container_media_id: string,
@@ -33,20 +55,6 @@ export class PublicationModel {
 
       throw error;
     }
-  }
-
-  static async getPublicationByMediaId(media_id: string) {
-    const publication = await prisma.instagram_reels.findUnique({
-      where: { container_media_id: media_id },
-    });
-
-    return publication;
-  }
-
-  static async getAllPublications() {
-    const publications = await prisma.instagram_reels.findMany({});
-
-    return publications;
   }
 
   static async updateVideoUrlAndStatus(

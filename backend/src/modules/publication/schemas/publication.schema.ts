@@ -1,5 +1,7 @@
 import z from "zod";
 
+export const publicationIdSchema = z.object({ id: z.coerce.number().positive() });
+
 export const scheduleReelSchema = z.object({
   client_id: z.coerce.number().positive(),
   container_media_id: z.string(),
