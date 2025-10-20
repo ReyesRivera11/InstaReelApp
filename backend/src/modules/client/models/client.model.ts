@@ -4,6 +4,7 @@ import prisma from "../../../shared/lib/prisma";
 import { AppError } from "../../../core/errors/AppError";
 import { HttpCode } from "../../../shared/enums/HttpCode";
 import { ClientData } from "../interfaces/clientData.interface";
+import { IUpdateClient } from "../interfaces/UpdateClient.interface";
 
 export class ClientModel {
   static async getClientById(id: number) {
@@ -53,6 +54,37 @@ export class ClientModel {
         throw new AppError({
           httpCode: HttpCode.CONFLICT,
           description: "Error al guardar el token de acceso del cliente",
+        });
+      }
+
+      throw error;
+    }
+  }
+
+  static async updateClient(updateClientData: IUpdateClient) {
+    const { id, name, username, description } = updateClientData;
+    
+    try {
+      await prisma.client.update({
+        where: { id },
+        data: {
+          name,
+          username,
+          description,
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === "P2002") {
+          throw new AppError({
+            httpCode: HttpCode.CONFLICT,
+            description: `El usuario ${username} ya existe`,
+          });
+        }
+
+        throw new AppError({
+          httpCode: HttpCode.CONFLICT,
+          description: "Error al actualizar el cliente",
         });
       }
 

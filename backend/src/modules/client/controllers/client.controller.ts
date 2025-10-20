@@ -1,11 +1,20 @@
 import { Request, Response } from "express";
 
 import { validateSchema } from "../../../shared/utils/zodValidation";
-import { clientIdSchema, createClientSchema } from "../schemas/client.schema";
+import {
+  clientIdSchema,
+  createClientSchema,
+  updateClientSchema,
+} from "../schemas/client.schema";
 
 import { HttpCode } from "../../../shared/enums/HttpCode";
 
-import { createClientService, getAllClientsService, getClientByIdService } from "../services";
+import {
+  createClientService,
+  getAllClientsService,
+  getClientByIdService,
+  updateClientService,
+} from "../services";
 
 export class ClientController {
   static async getClientById(req: Request, res: Response) {
@@ -18,7 +27,7 @@ export class ClientController {
 
   static async getAllClients(_req: Request, res: Response) {
     const clients = await getAllClientsService();
-    
+
     res.json({ clients });
   }
 
@@ -28,5 +37,19 @@ export class ClientController {
     await createClientService(accountData);
 
     res.sendStatus(HttpCode.CREATED);
+  }
+
+  static async updateClient(req: Request, res: Response) {
+    const { id } = await validateSchema(clientIdSchema, req.params);
+    const { username, name, description } = await validateSchema(
+      updateClientSchema,
+      req.body
+    );
+
+    const clientData = { id, username, name, description };
+
+    await updateClientService(clientData);
+
+    res.sendStatus(HttpCode.OK);
   }
 }
