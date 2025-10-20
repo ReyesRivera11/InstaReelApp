@@ -1,24 +1,30 @@
 export const META_API_URLS = {
   // Instagram Basic Display API
   INSTAGRAM_OAUTH: {
-    SHORT_TOKEN: 'https://api.instagram.com/oauth/access_token',
-    LONG_TOKEN: 'https://graph.instagram.com/access_token',
-    REFRESH_TOKEN: 'https://graph.instagram.com/refresh_access_token'
+    SHORT_TOKEN: "https://api.instagram.com/oauth/access_token",
+    LONG_TOKEN: "https://graph.instagram.com/access_token",
+    REFRESH_TOKEN: "https://graph.instagram.com/refresh_access_token",
   },
 
-  // Instagram Graph API 
+  // Instagram Graph API
   INSTAGRAM_GRAPH: {
-    BASE: 'https://graph.facebook.com',
-    SHORT_TOKEN: 'https://graph.facebook.com/v24.0/oauth/access_token',
-    ME_ACCOUNT: 'https://graph.facebook.com/v24.0/me/accounts',
-    USER_MEDIA: (userId: string) => `https://graph.facebook.com/${userId}/media`,
-    MEDIA_PUBLISH: (userId: string) => `https://graph.facebook.com/${userId}/media_publish`
-  }
+    BASE: "https://graph.facebook.com/v24.0",
+    SHORT_TOKEN: "https://graph.facebook.com/v24.0/oauth/access_token",
+    ME_ACCOUNT: "https://graph.facebook.com/v24.0/me/accounts",
+    USER_MEDIA: (userId: string) =>
+      `https://graph.facebook.com/${userId}/media`,
+    MEDIA_PUBLISH: (userId: string) =>
+      `https://graph.facebook.com/v24.0/${userId}/media_publish`,
+    MEDIA_STATUS: (mediaId: string, accessToken: string) =>
+      `https://graph.facebook.com/v24.0/${mediaId}?fields=permalink&access_token=${accessToken}`,
+    MEDIA_UPLOAD: (mediaId: string) =>
+      `https://rupload.facebook.com/ig-api-upload/v24.0/${mediaId}`,
+  },
 } as const;
 
 export const META_GRANT_TYPES = {
-  AUTHORIZATION_CODE: 'authorization_code',
-  REFRESH_TOKEN: 'ig_refresh_token',
-  EXCHANGE_TOKEN: 'ig_exchange_token',
-  FB_EXCHANGE_TOKEN: 'fb_exchange_token'
+  AUTHORIZATION_CODE: "authorization_code",
+  REFRESH_TOKEN: "ig_refresh_token",
+  EXCHANGE_TOKEN: "ig_exchange_token",
+  FB_EXCHANGE_TOKEN: "fb_exchange_token",
 } as const;
