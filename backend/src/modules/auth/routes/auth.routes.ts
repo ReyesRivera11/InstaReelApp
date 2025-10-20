@@ -1,10 +1,12 @@
 import { Router } from "express";
 import { AuthController } from "../controllers/auth.controller";
 
-export const authRoutes = Router();
+const authRouter = Router();
 
-authRoutes.post('/login', AuthController.login);
-authRoutes.post('/logout', AuthController.logout);
+authRouter.post('/login', AuthController.login);
+authRouter.post('/logout', AuthController.logout);
 
-authRoutes.post('/refresh', AuthController.refreshToken)
-authRoutes.get('/me', AuthController.getMe)
+authRouter.post('/refresh', AuthController.refreshToken)
+authRouter.get('/me', AuthController.getMe)
+
+export default authRouter;

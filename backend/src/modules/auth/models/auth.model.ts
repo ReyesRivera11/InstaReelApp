@@ -13,8 +13,8 @@ export class AuthModel {
       select: {
         id: true,
         email: true,
-        firstName: true,
-        lastName: true,
+        first_name: true,
+        last_name: true,
       }
     });
 

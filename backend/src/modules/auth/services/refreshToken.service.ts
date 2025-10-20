@@ -1,10 +1,10 @@
 import { Response, Request } from "express";
+import jwt from "jsonwebtoken";
 import { HttpCode } from "../../../shared/enums/HttpCode";
 import { tokenService } from "../../../shared/services/tokens.service";
-import jwt from "jsonwebtoken";
 import { JWT_REFRESH_TOKEN } from "../../../shared/config/env";
-import { JwtPayload } from "../../../shared/interfaces/JwtPayload";
 import { AppError } from "../../../core/errors/AppError";
+import { JwtPayload } from '../../../shared/interfaces/JwtPayload';
 
 export const refreshTokenService = async (
   cookies: Request["cookies"],

@@ -1,5 +1,5 @@
 import { Request } from "express";
-import { LoginData } from "../interfaces/login.interface";
+import { LoginData } from '../interfaces/login.interface';
 import { AuthModel } from "../models/auth.model";
 import { tokenService } from "../../../shared/services/tokens.service";
 
