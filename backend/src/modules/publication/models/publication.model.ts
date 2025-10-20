@@ -43,6 +43,12 @@ export class PublicationModel {
     return publication;
   }
 
+  static async getAllPublications() {
+    const publications = await prisma.instagram_reels.findMany({});
+
+    return publications;
+  }
+
   static async updateVideoUrlAndStatus(
     publication_id: number,
     video_url: string

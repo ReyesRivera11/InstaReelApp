@@ -4,11 +4,17 @@ import { validateSchema } from "../../../shared/utils/zodValidation";
 import { scheduleReelSchema } from "../schemas/publication.schema";
 
 import { HttpCode } from "../../../shared/enums/HttpCode";
-
-import { scheduleReelService } from "../services";
 import { AppError } from "../../../core/errors/AppError";
 
+import { getPublicationsService, scheduleReelService } from "../services";
+
 export class PublicationController {
+  static async getPublications(_req: Request, res: Response) {
+    const publications = await getPublicationsService();
+
+    res.json({ publications });
+  }
+
   static async scheduleReel(req: Request, res: Response) {
     const reel = req.file;
     const reelData = await validateSchema(scheduleReelSchema, req.body);
