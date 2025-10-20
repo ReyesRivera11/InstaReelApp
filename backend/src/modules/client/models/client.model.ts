@@ -6,6 +6,14 @@ import { HttpCode } from "../../../shared/enums/HttpCode";
 import { ClientData } from "../interfaces/clientData.interface";
 
 export class ClientModel {
+  static async getClientById(id: number) {
+    const client = await prisma.client.findUnique({
+      where: { id },
+    });
+
+    return client;
+  }
+
   static async getAllClients() {
     const clients = await prisma.client.findMany({
       select: {
@@ -14,12 +22,12 @@ export class ClientModel {
         username: true,
         description: true,
         id_insta: true,
-      }
+      },
     });
 
     return clients;
   }
-  
+
   static async createAccount(accountData: ClientData) {
     try {
       const { name, username, description, long_lived_token, insta_id } =

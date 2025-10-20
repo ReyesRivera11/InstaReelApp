@@ -6,4 +6,6 @@ const clientRouter = Router();
 clientRouter.get('/list', ClientController.getAllClients)
 clientRouter.post('/create', ClientController.createClient)
 
+clientRouter.get('/:id', ClientController.getClientById)
+
 export default clientRouter;

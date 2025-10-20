@@ -1,5 +1,7 @@
 import z from "zod";
 
+export const clientIdSchema = z.object({ id: z.coerce.number().positive() });
+
 export const createClientSchema = z.object({
   long_lived_token: z.string(),
   name: z.string(),

@@ -1,13 +1,21 @@
 import { Request, Response } from "express";
 
 import { validateSchema } from "../../../shared/utils/zodValidation";
-import { createClientSchema } from "../schemas/client.schema";
+import { clientIdSchema, createClientSchema } from "../schemas/client.schema";
 
 import { HttpCode } from "../../../shared/enums/HttpCode";
 
-import { createClientService, getAllClientsService } from "../services";
+import { createClientService, getAllClientsService, getClientByIdService } from "../services";
 
 export class ClientController {
+  static async getClientById(req: Request, res: Response) {
+    const { id } = await validateSchema(clientIdSchema, req.params);
+
+    const client = await getClientByIdService(id);
+
+    res.json({ client });
+  }
+
   static async getAllClients(_req: Request, res: Response) {
     const clients = await getAllClientsService();
     
