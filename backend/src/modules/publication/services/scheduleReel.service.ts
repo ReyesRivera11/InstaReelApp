@@ -1,13 +1,19 @@
 import { scheduleJob } from "node-schedule";
 
 import { ScheduleReel } from "../interfaces/ReelData.interface";
-import { publishReelService } from "./publishReel.service";
-import { ClientModel } from "../../client/models/client.model";
+
 import { AppError } from "../../../core/errors/AppError";
 import { HttpCode } from "../../../shared/enums/HttpCode";
-import { PublicationModel } from "../models/publication.model";
 
-export const scheduleReelService = async (reelData: ScheduleReel) => {
+import { PublicationModel } from "../models/publication.model";
+import { ClientModel } from "../../client/models/client.model";
+
+import { uploadVideoToMetaServerService, publishReelService } from '../services/index'
+
+export const scheduleReelService = async (
+  reelData: ScheduleReel,
+  reel: Express.Multer.File
+) => {
   const { client_id, container_media_id, title, description, scheduled_date } =
     reelData;
 
@@ -21,12 +27,14 @@ export const scheduleReelService = async (reelData: ScheduleReel) => {
     throw new AppError({
       httpCode: HttpCode.NOT_FOUND,
       description: "Cliente no encontrado",
-    }); 
+    });
   }
 
   const { long_lived_token, insta_id } = instagramClient;
 
-  const publicationFound = await PublicationModel.getPublicationByMediaId(container_media_id);
+  const publicationFound = await PublicationModel.getPublicationByMediaId(
+    container_media_id
+  );
 
   if (publicationFound) {
     throw new AppError({
@@ -40,10 +48,17 @@ export const scheduleReelService = async (reelData: ScheduleReel) => {
     container_media_id,
     title,
     scheduled_date,
-    description,
+    description
   );
 
+  await uploadVideoToMetaServerService(container_media_id, instagramClient.long_lived_token, reel);
+
   scheduleJob(reelData.scheduled_date, async () => {
-    await publishReelService(insta_id, container_media_id, publication_id, long_lived_token);
+    await publishReelService(
+      insta_id,
+      container_media_id,
+      publication_id,
+      long_lived_token,
+    );
   });
 };

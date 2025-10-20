@@ -17,6 +17,8 @@ export const META_API_URLS = {
       `https://graph.facebook.com/v24.0/${userId}/media_publish`,
     MEDIA_STATUS: (mediaId: string, accessToken: string) =>
       `https://graph.facebook.com/v24.0/${mediaId}?fields=permalink&access_token=${accessToken}`,
+    MEDIA_UPLOAD: (mediaId: string) =>
+      `https://rupload.facebook.com/ig-api-upload/v24.0/${mediaId}`,
   },
 } as const;
 

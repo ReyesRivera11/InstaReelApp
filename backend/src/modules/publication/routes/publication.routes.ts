@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { PublicationController } from "../controllers/publication.controller";
+import upload from '../../../shared/config/multer';
 
 const publicationRouter = Router();
 
-publicationRouter.post('/schedule-reel', PublicationController.scheduleReel)
+publicationRouter.post('/schedule-reel', upload.single('reel'), PublicationController.scheduleReel)
 
 export default publicationRouter;
