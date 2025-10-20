@@ -15,6 +15,7 @@ import {
   getClientByIdService,
   updateClientService,
 } from "../services";
+import { deleteClientService } from "../services/deleteClient.service";
 
 export class ClientController {
   static async getClientById(req: Request, res: Response) {
@@ -50,6 +51,14 @@ export class ClientController {
 
     await updateClientService(clientData);
 
+    res.sendStatus(HttpCode.OK);
+  }
+
+  static async deleteClient(req: Request, res: Response) {
+    const { id } = await validateSchema(clientIdSchema, req.params);
+
+    await deleteClientService(id);
+    
     res.sendStatus(HttpCode.OK);
   }
 }

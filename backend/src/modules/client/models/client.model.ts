@@ -63,7 +63,7 @@ export class ClientModel {
 
   static async updateClient(updateClientData: IUpdateClient) {
     const { id, name, username, description } = updateClientData;
-    
+
     try {
       await prisma.client.update({
         where: { id },
@@ -85,6 +85,30 @@ export class ClientModel {
         throw new AppError({
           httpCode: HttpCode.CONFLICT,
           description: "Error al actualizar el cliente",
+        });
+      }
+
+      throw error;
+    }
+  }
+
+  static async deleteClient(id: number) {
+    try {
+      await prisma.client.delete({
+        where: { id },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === "P2025") {
+          throw new AppError({
+            httpCode: HttpCode.CONFLICT,
+            description: "El cliente a eliminar no existe",
+          });
+        }
+
+        throw new AppError({
+          httpCode: HttpCode.CONFLICT,
+          description: "Error al eliminar el cliente",
         });
       }
 
