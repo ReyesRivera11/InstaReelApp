@@ -9,6 +9,7 @@ import { RecentPublications } from "../components/RecentPublications";
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchDashboard() {
@@ -19,15 +20,16 @@ export default function DashboardPage() {
       if (response.success && response.data) {
         setData(response.data);
       } else {
-        // Mostrar dashboard vacío con valores en cero
+        setError(response.error || "Error al cargar el dashboard");
         setData({
-          currentClients: 0,
-          scheduledCount: 0,
-          publishedCount: 0,
-          todayCount: 0,
+          stats: {
+            activeClients: 0,
+            scheduledPublications: 0,
+            completedPublications: 0,
+            todayPublications: 0,
+          },
           recentPublications: [],
         });
-        setLoading(false);
       }
 
       setLoading(false);
@@ -60,12 +62,13 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <DashboardStats
-        currentClients={data.currentClients}
-        scheduledCount={data.scheduledCount}
-        publishedCount={data.publishedCount}
-        todayCount={data.todayCount}
-      />
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <p className="text-sm">{error}</p>
+        </div>
+      )}
+
+      <DashboardStats stats={data.stats} />
 
       <RecentPublications publications={data.recentPublications} />
     </div>

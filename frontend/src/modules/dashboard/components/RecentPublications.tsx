@@ -81,14 +81,14 @@ export function RecentPublications({ publications }: RecentPublicationsProps) {
                 <div className="flex items-center gap-4">
                   <div className="text-right">
                     <p className="text-sm font-medium">
-                      {new Date(pub.scheduledDate).toLocaleDateString("es-ES", {
+                      {new Date(pub.scheduledFor).toLocaleDateString("es-ES", {
                         day: "2-digit",
                         month: "short",
                         year: "numeric",
                       })}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(pub.scheduledDate).toLocaleTimeString("es-ES", {
+                      {new Date(pub.scheduledFor).toLocaleTimeString("es-ES", {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
