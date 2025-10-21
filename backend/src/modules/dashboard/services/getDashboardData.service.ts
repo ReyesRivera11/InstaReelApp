@@ -22,15 +22,16 @@ export const getDashboardDataService = async () => {
     todayPublications,
   };
 
-  const formattedPublications= recentPublications.map(
-    (pub) => ({
-      id: pub.id,
-      clientName: pub.client.name,
-      scheduledFor: pub.scheduled_date,
-      status: pub.status as "SCHEDULED" | "PUBLISHED",
-      mediaUrl: pub.video_url || undefined,
-    })
-  );
+  const formattedPublications = recentPublications.map((pub) => ({
+    id: pub.id,
+    clientName: pub.client.name,
+    scheduledFor: pub.scheduled_date,
+    title: pub.title,
+    description: pub.description,
+    status: pub.status as "SCHEDULED" | "PUBLISHED",
+    mediaUrl: pub.video_url || undefined,
+    created_at: pub.created_at,
+  }));
 
   return {
     stats,
