@@ -162,7 +162,7 @@ class AppPublications {
   }
 
   async updatePublication(
-    id: string,
+    id: number,
     data: Partial<CreatePublicationDto>
   ): Promise<PublicationResponse<Publication>> {
     try {
