@@ -29,7 +29,6 @@ const PublicationsPage = () => {
   const getScheduledDate = (pub: Publication): string | undefined => {
     return pub.scheduled_date ?? pub.scheduledDate ?? undefined;
   };
-  // </CHANGE>
 
   useEffect(() => {
     if (error) {
@@ -98,26 +97,20 @@ const PublicationsPage = () => {
     switch (status) {
       case "scheduled":
         return (
-          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
-            Programado
+          <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
+            PROGRAMADO
           </span>
         );
-      case "published":
+      case "PUBLISHED":
         return (
-          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs">
-            Publicado
-          </span>
-        );
-      case "failed":
-        return (
-          <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs">
-            Fallido
+          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+            PUBLICADO
           </span>
         );
       default:
         return (
-          <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
-            {status}
+          <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
+            {status.toUpperCase()}
           </span>
         );
     }
@@ -255,11 +248,11 @@ const PublicationsPage = () => {
                   key={pub.id}
                   onClick={() => handleViewDetails(pub)}
                   className={`text-xs p-2 rounded-md border-l-2 cursor-pointer hover:scale-105 transition-transform ${
-                    pub.status === "scheduled"
-                      ? "bg-blue-50 border-blue-500 hover:bg-blue-100"
-                      : pub.status === "published"
+                    pub.status === "SCHEDULED"
+                      ? "bg-yellow-50 border-yellow-500 hover:bg-yellow-100"
+                      : pub.status === "PUBLISHED"
                       ? "bg-green-50 border-green-500 hover:bg-green-100"
-                      : "bg-red-50 border-red-500 hover:bg-red-100"
+                      : ""
                   }`}
                 >
                   <p className="line-clamp-1">{pub.title}</p>
@@ -409,9 +402,8 @@ const PublicationsPage = () => {
                 className="w-full px-3 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 <option value="all">Todos los estados</option>
-                <option value="scheduled">Programado</option>
-                <option value="published">Publicado</option>
-                <option value="failed">Fallido</option>
+                <option value="SCHEDULED">Programado</option>
+                <option value="PUBLISHED">Publicado</option>
               </select>
             </div>
           </div>
@@ -512,7 +504,7 @@ const PublicationsPage = () => {
                               <td className="p-4 text-right">
                                 <button
                                   onClick={() => handleViewDetails(pub)}
-                                  className="px-3 py-1 text-sm hover:bg-accent rounded-lg transition-colors"
+                                  className="px-4 py-2 text-sm bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 rounded-lg transition-all shadow-sm hover:shadow-md font-medium"
                                 >
                                   Ver detalles
                                 </button>
@@ -583,7 +575,7 @@ const PublicationsPage = () => {
 
                   <div className="flex gap-4 mt-6 justify-center">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded border-l-2 border-blue-500 bg-blue-50"></div>
+                      <div className="w-3 h-3 rounded border-l-2 border-yellow-500 bg-yellow-50"></div>
                       <span className="text-sm text-muted-foreground">
                         Programado
                       </span>
@@ -592,12 +584,6 @@ const PublicationsPage = () => {
                       <div className="w-3 h-3 rounded border-l-2 border-green-500 bg-green-50"></div>
                       <span className="text-sm text-muted-foreground">
                         Publicado
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded border-l-2 border-red-500 bg-red-50"></div>
-                      <span className="text-sm text-muted-foreground">
-                        Fallido
                       </span>
                     </div>
                   </div>

@@ -76,7 +76,6 @@ class AppPublications {
       };
     }
 
-    // Check if response is ok (status 200-299)
     if (!response.ok) {
       try {
         const errorData = await response.json();
