@@ -7,12 +7,10 @@ interface RecentPublicationsProps {
 export function RecentPublications({ publications }: RecentPublicationsProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "scheduled":
-        return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
-      case "published":
+      case "SCHEDULED":
+        return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400";
+      case "PUBLISHED":
         return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
-      case "failed":
-        return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
       default:
         return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400";
     }
@@ -20,12 +18,10 @@ export function RecentPublications({ publications }: RecentPublicationsProps) {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "scheduled":
-        return "Programado";
-      case "published":
-        return "Publicado";
-      case "failed":
-        return "Fallido";
+      case "SCHEDULED":
+        return "PROGRAMADO";
+      case "PUBLISHED":
+        return "PUBLICADO";
       default:
         return status;
     }

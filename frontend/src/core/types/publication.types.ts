@@ -24,3 +24,19 @@ export interface CreatePublicationDto {
   creationId?: string;
   videoSize?: number;
 }
+
+export interface PublicationFilters {
+  search?: string;
+  status?: "SCHEDULED" | "PUBLISHED";
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedPublications {
+  publications: Publication[];
+  total: number;
+  page: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}

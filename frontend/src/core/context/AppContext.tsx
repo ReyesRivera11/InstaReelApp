@@ -5,7 +5,7 @@ import type {
   Publication,
   Page,
   CreateClientDTO,
-  UpdateClientDTO, // ✅ asegúrate de importar esto
+  UpdateClientDTO,
 } from "../types";
 
 export interface AppContextType {
@@ -21,7 +21,6 @@ export interface AppContextType {
   deleteClient: (id: number) => void;
   loadClients: () => Promise<void>;
 
-  /** ✅ Nuevo método para editar cliente */
   updateClient: (id: number, data: UpdateClientDTO) => Promise<void>;
 
   publications: Publication[];
@@ -30,6 +29,5 @@ export interface AppContextType {
   oauthCompleted: boolean;
   setOauthCompleted: (value: boolean) => void;
 }
-
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);

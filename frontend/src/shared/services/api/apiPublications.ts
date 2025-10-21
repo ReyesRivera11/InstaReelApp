@@ -1,4 +1,9 @@
-import type { CreatePublicationDto, Publication } from "../../../core/types";
+import type {
+  CreatePublicationDto,
+  Publication,
+  PublicationFilters,
+  PaginatedPublications,
+} from "../../../core/types";
 
 export interface ScheduledReel {
   id: number;
@@ -16,7 +21,6 @@ export interface PublicationResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
-  publications?: T;
 }
 
 const API_BASE_URL =
@@ -123,20 +127,63 @@ class AppPublications {
     }
   }
 
-  async getPublications(): Promise<PublicationResponse<Publication[]>> {
+  async getPublications(
+    filters?: PublicationFilters
+  ): Promise<PaginatedPublications> {
     try {
-      const response = await this.fetchWithAuth(
-        `${this.baseURL}/publication/list`,
-        {
-          method: "GET",
-        }
-      );
+      const params = new URLSearchParams();
 
-      return await this.parseResponse<Publication[]>(response);
+      if (filters?.search) params.append("search", filters.search);
+      if (filters?.status) params.append("status", filters.status);
+      if (filters?.page) params.append("page", filters.page.toString());
+      if (filters?.limit) params.append("limit", filters.limit.toString());
+
+      const queryString = params.toString();
+      const url = `${this.baseURL}/publication${
+        queryString ? `?${queryString}` : ""
+      }`;
+
+      const response = await this.fetchWithAuth(url, {
+        method: "GET",
+      });
+
+      const contentType = response.headers.get("content-type");
+
+      if (!contentType || !contentType.includes("application/json")) {
+        console.error("[v0] Non-JSON response received:", contentType);
+        return {
+          publications: [],
+          total: 0,
+          page: 1,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        };
+      }
+
+      if (!response.ok) {
+        console.error("[v0] API error:", response.status);
+        return {
+          publications: [],
+          total: 0,
+          page: 1,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        };
+      }
+
+      const data = await response.json();
+      return data as PaginatedPublications;
     } catch (error) {
+      console.error("[v0] Error in getPublications:", error);
       return {
-        success: false,
-        error: error instanceof Error ? error.message : "Error desconocido",
+        publications: [],
+        total: 0,
+        page: 1,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
       };
     }
   }
@@ -223,11 +270,9 @@ class AppPublications {
           credentials: "include" as RequestCredentials,
         }
       );
-      console.log(response);
 
       return await this.parseResponse<ScheduledReel>(response);
     } catch (error) {
-      console.log(error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "Error desconocido",

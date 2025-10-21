@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import type { Publication } from "../../../core/types";
+import { useState, useEffect, useCallback } from "react";
+import type {
+  Publication,
+  PublicationFilters,
+  PaginatedPublications,
+} from "../../../core/types";
 import { PublicationDetailModal } from "../components/PublicationDetailModal";
 import { useApp } from "../../../shared/hooks/useApp";
 import { appPublications } from "../../../shared/services/api/apiPublications";
 
-import { AlertCircle, CheckCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, X } from "lucide-react";
 import { Alert } from "../../../shared/components/ui";
 
 type ViewMode = "table" | "calendar";
@@ -17,8 +21,9 @@ const PublicationsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-
+  console.log(publications);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -26,9 +31,12 @@ const PublicationsPage = () => {
     useState<Publication | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const getScheduledDate = (pub: Publication): string | undefined => {
-    return pub.scheduled_date ?? pub.scheduledDate ?? undefined;
-  };
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalPublications, setTotalPublications] = useState(0);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrev, setHasPrev] = useState(false);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     if (error) {
@@ -48,97 +56,77 @@ const PublicationsPage = () => {
     }
   }, [success]);
 
-  const loadPublications = async () => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const loadPublications = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await appPublications.getPublications();
-      console.log(response);
-      if (response.publications) {
+      setError(null);
+
+      const filters: PublicationFilters = {
+        page: currentPage,
+        limit: itemsPerPage,
+      };
+
+      if (debouncedSearchTerm) filters.search = debouncedSearchTerm;
+      if (statusFilter !== "all")
+        filters.status = statusFilter as "SCHEDULED" | "PUBLISHED";
+
+      const response: PaginatedPublications =
+        await appPublications.getPublications(filters);
+
+      if (response.publications && Array.isArray(response.publications)) {
         setPublications(response.publications);
+        setTotalPages(response.totalPages);
+        setTotalPublications(response.total);
+        setHasNext(response.hasNext);
+        setHasPrev(response.hasPrev);
       } else {
-        setError(response.error || "Error al cargar las publicaciones");
+        setPublications([]);
+        setError("Error al cargar las publicaciones");
       }
     } catch (err) {
+      console.error("[v0] Error loading publications:", err);
+      setPublications([]);
       setError(
         err instanceof Error ? err.message : "Error al cargar las publicaciones"
       );
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentPage, debouncedSearchTerm, statusFilter]);
 
   useEffect(() => {
     loadPublications();
-  }, []);
+  }, [loadPublications]);
 
-  const handleUpdatePublication = async () => {
-    setSuccess(true);
-    await loadPublications();
-  };
-
-  const handleViewDetails = (publication: Publication) => {
-    setSelectedPublication(publication);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedPublication(null);
-  };
-
-  const getClientName = (clientId: number) => {
-    const client = clients.find((c) => c.id === clientId);
-    return client
-      ? `${client.name} (@${client.username})`
-      : "Cliente desconocido";
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "scheduled":
-        return (
-          <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
-            PROGRAMADO
-          </span>
-        );
-      case "PUBLISHED":
-        return (
-          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-            PUBLICADO
-          </span>
-        );
-      default:
-        return (
-          <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
-            {status.toUpperCase()}
-          </span>
-        );
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
     }
+  }, [debouncedSearchTerm, statusFilter, currentPage]);
+
+  const getScheduledDate = (pub: Publication): string | undefined => {
+    return pub.scheduled_date ?? pub.scheduledDate ?? undefined;
   };
 
-  const filteredPublications = publications.filter((pub) => {
-    const matchesSearch =
-      pub.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (pub.description &&
-        pub.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      getClientName(pub.client_id)
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-
-    const matchesStatus = statusFilter === "all" || pub.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const sortedPublications = [...filteredPublications].sort((a, b) => {
-    const dateA = getScheduledDate(a)
-      ? new Date(getScheduledDate(a)!).getTime()
-      : 0;
-    const dateB = getScheduledDate(b)
-      ? new Date(getScheduledDate(b)!).getTime()
-      : 0;
-    return dateB - dateA;
-  });
+  const sortedPublications = Array.isArray(publications)
+    ? [...publications].sort((a, b) => {
+        const dateA = getScheduledDate(a)
+          ? new Date(getScheduledDate(a)!).getTime()
+          : 0;
+        const dateB = getScheduledDate(b)
+          ? new Date(getScheduledDate(b)!).getTime()
+          : 0;
+        return dateB - dateA;
+      })
+    : [];
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -152,7 +140,9 @@ const PublicationsPage = () => {
   };
 
   const getPublicationsForDate = (date: Date) => {
-    return filteredPublications.filter((pub) => {
+    if (!Array.isArray(publications)) return [];
+
+    return publications.filter((pub) => {
       const scheduledDate = getScheduledDate(pub);
       if (!scheduledDate) return false;
 
@@ -256,10 +246,10 @@ const PublicationsPage = () => {
                   }`}
                 >
                   <p className="line-clamp-1">{pub.title}</p>
-                  <p className="text-muted-foreground line-clamp-1 mt-0.5">
+                  <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
                     {client?.name || "Cliente desconocido"}
                   </p>
-                  <p className="text-muted-foreground mt-0.5">
+                  <p className="text-sm text-muted-foreground mt-0.5">
                     {formatPublicationTime(pub)}
                   </p>
                 </div>
@@ -292,6 +282,184 @@ const PublicationsPage = () => {
         </div>
       </div>
     );
+  };
+
+  const renderPaginationControls = () => {
+    if (totalPages <= 1) return null;
+
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+
+    return (
+      <div className="flex items-center justify-between px-6 py-4 border-t border-border">
+        <div className="text-sm text-muted-foreground">
+          Mostrando {publications.length} de {totalPublications} publicaciones
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCurrentPage(1)}
+            disabled={!hasPrev}
+            className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <polyline points="11 17 6 12 11 7" strokeWidth="2" />
+              <polyline points="18 17 13 12 18 7" strokeWidth="2" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setCurrentPage(currentPage - 1)}
+            disabled={!hasPrev}
+            className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <polyline points="15 18 9 12 15 6" strokeWidth="2" />
+            </svg>
+          </button>
+
+          {startPage > 1 && (
+            <>
+              <button
+                onClick={() => setCurrentPage(1)}
+                className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors text-sm"
+              >
+                1
+              </button>
+              {startPage > 2 && (
+                <span className="px-2 text-muted-foreground">...</span>
+              )}
+            </>
+          )}
+
+          {pageNumbers.map((page) => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`px-3 py-2 border rounded-lg text-sm transition-colors ${
+                currentPage === page
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white border-transparent"
+                  : "border-border hover:bg-accent"
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+
+          {endPage < totalPages && (
+            <>
+              {endPage < totalPages - 1 && (
+                <span className="px-2 text-muted-foreground">...</span>
+              )}
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors text-sm"
+              >
+                {totalPages}
+              </button>
+            </>
+          )}
+
+          <button
+            onClick={() => setCurrentPage(currentPage + 1)}
+            disabled={!hasNext}
+            className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <polyline points="9 18 15 12 9 6" strokeWidth="2" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setCurrentPage(totalPages)}
+            disabled={!hasNext}
+            className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <polyline points="13 17 18 12 13 7" strokeWidth="2" />
+              <polyline points="6 17 11 12 6 7" strokeWidth="2" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const handleUpdatePublication = async () => {
+    setSuccess(true);
+    await loadPublications();
+  };
+
+  const handleViewDetails = (publication: Publication) => {
+    setSelectedPublication(publication);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedPublication(null);
+  };
+
+  const getClientName = (clientId: number) => {
+    const client = clients.find((c) => c.id === clientId);
+    return client
+      ? `${client.name} (@${client.username})`
+      : "Cliente desconocido";
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "SCHEDULED":
+        return (
+          <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
+            PROGRAMADO
+          </span>
+        );
+      case "PUBLISHED":
+      case "published":
+        return (
+          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+            PUBLICADO
+          </span>
+        );
+      default:
+        return (
+          <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
+            {status.toUpperCase()}
+          </span>
+        );
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm("");
   };
 
   return (
@@ -392,8 +560,17 @@ const PublicationsPage = () => {
                 placeholder="Buscar por título, descripción o cliente..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full pl-10 pr-10 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               />
+              {searchTerm && (
+                <button
+                  onClick={handleClearSearch}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Limpiar búsqueda"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
             <div className="sm:w-48">
               <select
@@ -401,9 +578,9 @@ const PublicationsPage = () => {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="w-full px-3 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
-                <option value="all">Todos los estados</option>
-                <option value="SCHEDULED">Programado</option>
-                <option value="PUBLISHED">Publicado</option>
+                <option value="">Todos los estados</option>
+                <option value="scheduled">Programado</option>
+                <option value="published">Publicado</option>
               </select>
             </div>
           </div>
@@ -422,7 +599,7 @@ const PublicationsPage = () => {
               <div className="bg-card rounded-lg border border-border">
                 <div className="p-6 border-b border-border">
                   <h2 className="text-xl font-semibold">
-                    {sortedPublications.length} Publicaciones
+                    {totalPublications} Publicaciones
                   </h2>
                   <p className="text-sm text-muted-foreground">
                     Listado completo de todas tus publicaciones
@@ -516,6 +693,7 @@ const PublicationsPage = () => {
                     </div>
                   )}
                 </div>
+                {renderPaginationControls()}
               </div>
             )}
 
