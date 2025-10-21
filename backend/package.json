@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "vercel-build": "prisma generate && pnpm build",
-    "build": "tsc",
-    "start": "node dist/src/app.js",
+    "vercel-build": "pnpm build",
+    "build": "pnpm install && prisma generate && tsc",
+    "start": "node dist/app.js",
     "seed": "ts-node prisma/seed.ts",
     "dev": "ts-node-dev src/app.ts"
   },
