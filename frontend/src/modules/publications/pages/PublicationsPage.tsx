@@ -11,7 +11,7 @@ import { Alert } from "../../../shared/components/ui";
 
 type ViewMode = "table" | "calendar";
 
-export function PublicationsPage() {
+const PublicationsPage = () => {
   const { clients } = useApp();
   const [publications, setPublications] = useState<Publication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,6 +25,11 @@ export function PublicationsPage() {
   const [selectedPublication, setSelectedPublication] =
     useState<Publication | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const getScheduledDate = (pub: Publication): string | undefined => {
+    return pub.scheduled_date ?? pub.scheduledDate ?? undefined;
+  };
+  // </CHANGE>
 
   useEffect(() => {
     if (error) {
@@ -48,9 +53,9 @@ export function PublicationsPage() {
     try {
       setIsLoading(true);
       const response = await appPublications.getPublications();
-
-      if (response.success && response.data) {
-        setPublications(response.data);
+      console.log(response);
+      if (response.publications) {
+        setPublications(response.publications);
       } else {
         setError(response.error || "Error al cargar las publicaciones");
       }
@@ -133,9 +138,12 @@ export function PublicationsPage() {
   });
 
   const sortedPublications = [...filteredPublications].sort((a, b) => {
-    // Manejar fechas opcionales
-    const dateA = a.scheduledDate ? new Date(a.scheduledDate).getTime() : 0;
-    const dateB = b.scheduledDate ? new Date(b.scheduledDate).getTime() : 0;
+    const dateA = getScheduledDate(a)
+      ? new Date(getScheduledDate(a)!).getTime()
+      : 0;
+    const dateB = getScheduledDate(b)
+      ? new Date(getScheduledDate(b)!).getTime()
+      : 0;
     return dateB - dateA;
   });
 
@@ -152,9 +160,10 @@ export function PublicationsPage() {
 
   const getPublicationsForDate = (date: Date) => {
     return filteredPublications.filter((pub) => {
-      if (!pub.scheduledDate) return false;
+      const scheduledDate = getScheduledDate(pub);
+      if (!scheduledDate) return false;
 
-      const pubDate = new Date(pub.scheduledDate);
+      const pubDate = new Date(scheduledDate);
       return (
         pubDate.getDate() === date.getDate() &&
         pubDate.getMonth() === date.getMonth() &&
@@ -175,8 +184,8 @@ export function PublicationsPage() {
     );
   };
 
-  // Función para formatear fecha de manera segura
-  const formatPublicationDate = (dateString?: string) => {
+  const formatPublicationDate = (pub: Publication) => {
+    const dateString = getScheduledDate(pub);
     if (!dateString) return "No programado";
 
     try {
@@ -190,8 +199,8 @@ export function PublicationsPage() {
     }
   };
 
-  // Función para formatear hora de manera segura
-  const formatPublicationTime = (dateString?: string) => {
+  const formatPublicationTime = (pub: Publication) => {
+    const dateString = getScheduledDate(pub);
     if (!dateString) return "";
 
     try {
@@ -258,7 +267,7 @@ export function PublicationsPage() {
                     {client?.name || "Cliente desconocido"}
                   </p>
                   <p className="text-muted-foreground mt-0.5">
-                    {formatPublicationTime(pub.scheduledDate)}
+                    {formatPublicationTime(pub)}
                   </p>
                 </div>
               );
@@ -490,10 +499,10 @@ export function PublicationsPage() {
                               <td className="p-4">
                                 <div>
                                   <p className="text-sm">
-                                    {formatPublicationDate(pub.scheduledDate)}
+                                    {formatPublicationDate(pub)}
                                   </p>
                                   <p className="text-sm text-muted-foreground">
-                                    {formatPublicationTime(pub.scheduledDate)}
+                                    {formatPublicationTime(pub)}
                                   </p>
                                 </div>
                               </td>
@@ -608,4 +617,6 @@ export function PublicationsPage() {
       </div>
     </>
   );
-}
+};
+
+export default PublicationsPage;

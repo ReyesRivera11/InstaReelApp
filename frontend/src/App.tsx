@@ -8,7 +8,7 @@ import { Sidebar } from "./shared/components/Sidebar";
 import { useApp } from "./shared/hooks/useApp";
 import { MetaCallbackPage } from "./shared/hooks/metaCallBack";
 import ScheduleReelPage from "./modules/schedule/ScheduleReelPage";
-import { PublicationsPage } from "./modules/publications/pages/PublicationsPage";
+import PublicationsPage from "./modules/publications/pages/PublicationsPage";
 
 function AppContent() {
   const { isAuthenticated, currentPage, setCurrentPage, logout } = useApp();

@@ -1,10 +1,5 @@
 "use client";
-
-import { useState } from "react";
 import type { Publication, ClientDB } from "../../../core/types";
-import { appPublications } from "../../../shared/services/api/apiPublications";
-import { Button, Input } from "../../../shared/components/ui";
-
 interface PublicationDetailModalProps {
   publication: Publication | null;
   client: ClientDB | undefined;
@@ -18,68 +13,44 @@ export function PublicationDetailModal({
   client,
   isOpen,
   onClose,
-  onUpdate,
 }: PublicationDetailModalProps) {
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [editedDate, setEditedDate] = useState("");
-  const [editedTime, setEditedTime] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
   if (!publication || !isOpen) return null;
 
-  const handleEditClick = () => {
-    // Verificar que scheduledDate existe antes de usarlo
-    if (!publication.scheduledDate) {
-      setError("No hay fecha programada para editar");
-      return;
-    }
-
-    const date = new Date(publication.scheduledDate);
-    const dateStr = date.toISOString().split("T")[0];
-    const timeStr = date.toTimeString().slice(0, 5);
-    setEditedDate(dateStr);
-    setEditedTime(timeStr);
-    setIsEditMode(true);
-    setError(null);
+  const getScheduledDate = (pub: Publication): string | undefined => {
+    return pub.scheduled_date ?? pub.scheduledDate ?? undefined;
   };
 
-  const handleUpdateDate = async () => {
-    if (!editedDate || !editedTime) {
-      setError("Por favor ingresa fecha y hora válidas");
-      return;
-    }
+  const getVideoUrl = (pub: Publication): string | undefined => {
+    return pub.video_url ?? pub.videoUrl ?? undefined;
+  };
 
-    setIsUpdating(true);
-    setError(null);
-
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "No programado";
     try {
-      const newScheduledDate = new Date(
-        `${editedDate}T${editedTime}`
-      ).toISOString();
-
-      const response = await appPublications.updatePublication(publication.id, {
-        scheduledDate: newScheduledDate,
+      return new Date(dateString).toLocaleDateString("es-ES", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
       });
-
-      if (response.success) {
-        setIsEditMode(false);
-        onUpdate?.();
-        onClose();
-      } else {
-        setError(response.error || "Error al actualizar la fecha");
-      }
     } catch {
-      setError("Error al actualizar la fecha de publicación");
-    } finally {
-      setIsUpdating(false);
+      return "Fecha inválida";
     }
   };
 
-  const handleCancelEdit = () => {
-    setIsEditMode(false);
-    setError(null);
+  const formatTime = (dateString?: string) => {
+    if (!dateString) return "";
+    try {
+      return new Date(dateString).toLocaleTimeString("es-ES", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "Hora inválida";
+    }
   };
+
+  const scheduledDate = getScheduledDate(publication);
+  const videoUrl = getVideoUrl(publication);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -110,37 +81,6 @@ export function PublicationDetailModal({
     }
   };
 
-  // Función para formatear fecha de manera segura
-  const formatScheduledDate = (dateString?: string) => {
-    if (!dateString) return "No programado";
-
-    try {
-      return new Date(dateString).toLocaleDateString("es-ES", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-    } catch {
-      return "Fecha inválida";
-    }
-  };
-
-  // Función para formatear hora de manera segura
-  const formatScheduledTime = (dateString?: string) => {
-    if (!dateString) return "No programado";
-
-    try {
-      return new Date(dateString).toLocaleTimeString("es-ES", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      });
-    } catch {
-      return "Hora inválida";
-    }
-  };
-
   return (
     <div
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
@@ -155,9 +95,7 @@ export function PublicationDetailModal({
             <div className="flex-1">
               <h2>{publication.title}</h2>
               <p className="text-sm text-muted-foreground mt-2">
-                {isEditMode
-                  ? "Editando fecha de publicación"
-                  : "Detalles completos de la publicación programada"}
+                "Detalles completos de la publicación programada"
               </p>
             </div>
             {getStatusBadge(publication.status)}
@@ -165,12 +103,6 @@ export function PublicationDetailModal({
         </div>
 
         <div className="p-6 space-y-6">
-          {error && (
-            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-              <p className="text-sm text-destructive">{error}</p>
-            </div>
-          )}
-
           <div className="flex items-start gap-4 p-4 bg-muted/50 rounded-lg">
             <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center flex-shrink-0">
               <svg
@@ -240,15 +172,70 @@ export function PublicationDetailModal({
                 Video del Reel
               </span>
             </div>
-            {publication.videoUrl ? (
-              <div className="relative aspect-[9/16] max-w-sm mx-auto bg-black rounded-lg overflow-hidden">
-                <video
-                  src={publication.videoUrl}
-                  controls
-                  className="w-full h-full object-contain"
+            {videoUrl ? (
+              <div className="flex justify-center">
+                <a
+                  href={videoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-br from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-md hover:shadow-lg"
                 >
-                  Tu navegador no soporta el elemento de video.
-                </video>
+                  <svg
+                    className="w-5 h-5"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <rect
+                      x="2"
+                      y="2"
+                      width="20"
+                      height="20"
+                      rx="5"
+                      ry="5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                    <line
+                      x1="17.5"
+                      y1="6.5"
+                      x2="17.51"
+                      y2="6.5"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  Ver Reel en Instagram
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <polyline
+                      points="15 3 21 3 21 9"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <line
+                      x1="10"
+                      y1="14"
+                      x2="21"
+                      y2="3"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </a>
               </div>
             ) : (
               <div className="aspect-[9/16] max-w-sm mx-auto bg-muted rounded-lg flex items-center justify-center">
@@ -330,18 +317,7 @@ export function PublicationDetailModal({
                   Fecha Programada
                 </span>
               </div>
-              {isEditMode ? (
-                <Input
-                  type="date"
-                  value={editedDate}
-                  onChange={(e) => setEditedDate(e.target.value)}
-                  className="w-full"
-                />
-              ) : (
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  {formatScheduledDate(publication.scheduledDate)}
-                </div>
-              )}
+              <p className="text-sm font-medium">{formatDate(scheduledDate)}</p>
             </div>
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -358,66 +334,19 @@ export function PublicationDetailModal({
                   Hora Programada
                 </span>
               </div>
-              {isEditMode ? (
-                <Input
-                  type="time"
-                  value={editedTime}
-                  onChange={(e) => setEditedTime(e.target.value)}
-                  className="w-full"
-                />
-              ) : (
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  {formatScheduledTime(publication.scheduledDate)}
-                </div>
-              )}
+              <p className="text-sm font-medium">{formatTime(scheduledDate)}</p>
             </div>
           </div>
 
           <div className="flex gap-3 pt-4 border-t border-border">
-            {isEditMode ? (
-              <>
-                <Button
-                  onClick={handleCancelEdit}
-                  variant="outline"
-                  className="flex-1 bg-transparent"
-                  disabled={isUpdating}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={handleUpdateDate}
-                  className="flex-1"
-                  disabled={isUpdating}
-                >
-                  {isUpdating ? "Guardando..." : "Guardar Cambios"}
-                </Button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={onClose}
-                  className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors"
-                >
-                  Cerrar
-                </button>
-                <button
-                  onClick={handleEditClick}
-                  disabled={
-                    publication.status !== "scheduled" ||
-                    !publication.scheduledDate
-                  }
-                  className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Editar Fecha
-                </button>
-                <button
-                  disabled={publication.status === "published"}
-                  className="flex-1 px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Cancelar Publicación
-                </button>
-              </>
-            )}
+            <>
+              <button
+                onClick={onClose}
+                className="flex-1 px-4 py-2 border border-border rounded-lg hover:bg-accent transition-colors"
+              >
+                Cerrar
+              </button>
+            </>
           </div>
         </div>
       </div>

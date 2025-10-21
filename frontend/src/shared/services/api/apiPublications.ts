@@ -16,6 +16,7 @@ export interface PublicationResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
+  publications?: T;
 }
 
 const API_BASE_URL =
