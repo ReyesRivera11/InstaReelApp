@@ -1,7 +1,8 @@
+import { PublicationFilters } from "../interfaces/PublicationFilters.interface";
 import { PublicationModel } from "../models/publication.model";
 
-export const getPublicationsService = async () => {
-  const publications = await PublicationModel.getAllPublications();
+export const getPublicationsService = async (filters: PublicationFilters) => {
+  const result = await PublicationModel.getPaginatedPublications(filters);
 
-  return publications;
+  return result;
 };

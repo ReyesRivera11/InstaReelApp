@@ -1,18 +1,28 @@
 import { Request, Response } from "express";
 
 import { validateSchema } from "../../../shared/utils/zodValidation";
-import { publicationIdSchema, scheduleReelSchema } from "../schemas/publication.schema";
+import {
+  publicationFiltersSchema,
+  publicationIdSchema,
+  scheduleReelSchema,
+} from "../schemas/publication.schema";
 
 import { HttpCode } from "../../../shared/enums/HttpCode";
 import { AppError } from "../../../core/errors/AppError";
 
-import { getPublicationByIdService, getPublicationsService, scheduleReelService } from "../services";
+import {
+  getPublicationByIdService,
+  getPublicationsService,
+  scheduleReelService,
+} from "../services";
 
 export class PublicationController {
-  static async getPublications(_req: Request, res: Response) {
-    const publications = await getPublicationsService();
+  static async getPublications(req: Request, res: Response) {
+    const filters = await validateSchema(publicationFiltersSchema, req.query);
 
-    res.json({ publications });
+    const result = await getPublicationsService(filters);
+
+    res.json(result);
   }
 
   static async getPublicationById(req: Request, res: Response) {

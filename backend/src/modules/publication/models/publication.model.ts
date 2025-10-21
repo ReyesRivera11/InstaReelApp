@@ -1,7 +1,10 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, ReelStatus } from "@prisma/client";
 import prisma from "../../../shared/lib/prisma";
+
 import { AppError } from "../../../core/errors/AppError";
 import { HttpCode } from "../../../shared/enums/HttpCode";
+
+import { PublicationFilters } from "../interfaces/PublicationFilters.interface";
 
 export class PublicationModel {
   static async getPublicationByMediaId(media_id: string) {
@@ -12,10 +15,72 @@ export class PublicationModel {
     return publication;
   }
 
-  static async getAllPublications() {
-    const publications = await prisma.instagram_reels.findMany({});
+  static async getPaginatedPublications(filters: PublicationFilters) {
+    const { search = "", status, page = 1, limit = 10 } = filters;
 
-    return publications;
+    const skip = (page - 1) * limit;
+
+    // Build where
+    const where: any = {};
+
+    // Filter by search
+    if (search) {
+      where.OR = [
+        { title: { contains: search } },
+        { description: { contains: search } },
+        { client: { name: { contains: search } } },
+      ];
+    }
+
+    // Filter by status
+    if (status) {
+      where.status = status.toUpperCase();
+    }
+
+    // Get publications
+    const [publications, total] = await Promise.all([
+      prisma.instagram_reels.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { created_at: "desc" },
+        include: {
+          client: {
+            select: {
+              name: true,
+              username: true,
+            },
+          },
+        },
+      }),
+      prisma.instagram_reels.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
+    // Format publications
+    const formattedPublications = publications.map((pub) => ({
+      id: pub.id,
+      title: pub.title,
+      description: pub.description,
+      clientName: pub.client.name,
+      scheduled_date: pub.scheduled_date,
+      status: pub.status as "scheduled" | "published",
+      media_url: pub.video_url,
+      published_at: pub.scheduled_date,
+      created_at: pub.created_at,
+    }));
+
+    return {
+      publications: formattedPublications,
+      total,
+      page,
+      totalPages,
+      hasNext,
+      hasPrev,
+    };
   }
 
   static async getPublicationById(id: number) {

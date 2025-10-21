@@ -9,3 +9,11 @@ export const scheduleReelSchema = z.object({
   title: z.string(),
   description: z.string().optional(),
 });
+
+
+export const publicationFiltersSchema = z.object({
+  search: z.string().optional(),
+  status: z.enum(['scheduled', 'published']).optional(),
+  page: z.string().transform(Number).pipe(z.number().int().positive()).optional().default(1),
+  limit: z.string().transform(Number).pipe(z.number().int().positive().max(50)).optional().default(10)
+});
