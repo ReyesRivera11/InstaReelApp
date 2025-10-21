@@ -45,6 +45,7 @@ model instagram_reels {
   video_url          String?
   scheduled_date     DateTime?
   container_media_id String?    @unique
+  created_at         DateTime?  @default(now())
 }
 
 enum ReelStatus {
