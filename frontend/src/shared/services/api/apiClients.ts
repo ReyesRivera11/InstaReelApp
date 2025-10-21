@@ -87,10 +87,7 @@ class ApiClient {
     }
   }
 
-  private async fetchWithAuth(
-    url: string,
-    options: RequestInit
-  ): Promise<Response> {
+  async fetchWithAuth(url: string, options: RequestInit): Promise<Response> {
     const fetchOptions: RequestInit = {
       ...this.defaultFetchOptions,
       ...options,
@@ -101,6 +98,33 @@ class ApiClient {
     };
 
     let response = await fetch(url, fetchOptions);
+
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text();
+      console.log("🔵 Respuesta sin JSON:", text);
+
+      if (text.trim().toUpperCase() === "OK") {
+        const fakeJson = JSON.stringify({ success: true, message: text });
+        const blob = new Blob([fakeJson], { type: "application/json" });
+        return new Response(blob, {
+          status: 200,
+          statusText: "OK",
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      const errorJson = JSON.stringify({
+        success: false,
+        error: `Respuesta no válida del servidor: ${text}`,
+      });
+      const blob = new Blob([errorJson], { type: "application/json" });
+      return new Response(blob, {
+        status: response.status || 400,
+        statusText: "Bad Request",
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     if (response.status === 401) {
       const newToken = await this.handleUnauthorized();
@@ -117,6 +141,44 @@ class ApiClient {
     }
 
     return response;
+  }
+
+  async patch<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
+    try {
+      const response = await this.fetchWithAuth(`${this.baseURL}${endpoint}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const dataParsed = await response.json();
+          return dataParsed;
+        } else {
+          const text = await response.text();
+          console.log("⚠️ Respuesta sin JSON:", text);
+          return {
+            success: true,
+            message:
+              text.trim().toUpperCase() === "OK"
+                ? "Cliente actualizado correctamente"
+                : text,
+          } as ApiResponse<T>;
+        }
+      }
+
+      const errorText = await response.text();
+      return {
+        success: false,
+        error: `Error del servidor: ${errorText}`,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Error desconocido",
+      };
+    }
   }
 
   async get<T>(endpoint: string): Promise<ApiResponse<T>> {
@@ -277,14 +339,14 @@ class ApiClient {
   }
 
   async deleteClient(id: number): Promise<ApiResponse<void>> {
-    return this.delete<void>(`/client/delete/${id}`);
+    return this.delete<void>(`/client/${id}`);
   }
 
   async editClient(
     id: number,
     data: UpdateClientDTO
   ): Promise<ApiResponse<ClientDB>> {
-    return this.put<ClientDB>(`/client/edit/${id}`, data);
+    return this.patch<ClientDB>(`/client/${id}`, data);
   }
 
   async initiateInstagramOAuth(

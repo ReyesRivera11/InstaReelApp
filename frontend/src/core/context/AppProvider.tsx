@@ -2,7 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { ReactNode } from "react";
-import type { Publication, Page, User, ClientDB, UpdateClientDTO } from "../types";
+import type {
+  Publication,
+  Page,
+  User,
+  ClientDB,
+  UpdateClientDTO,
+} from "../types";
 import { storage } from "../../shared/services/storage/localStorage";
 import { apiClient } from "../../shared/services/api/apiClients";
 import { AppContext } from "./AppContext";
@@ -104,12 +110,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateClient = async (id: number, data: UpdateClientDTO) => {
     try {
       const response = await apiClient.editClient(id, data);
-      if (response.success && response.data) {
+
+      if (response.success) {
         setClients((prev) =>
-          prev.map((c) => (c.id === id ? { ...c, ...response.data } : c))
+          prev.map((c) => (c.id === id ? { ...c, ...data } : c))
         );
       } else {
-        console.error("[v0] Error updating client:", response.error);
         throw new Error(response.error || "Error al actualizar cliente");
       }
     } catch (error) {
@@ -123,7 +129,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   ) => {
     const newPublication: Publication = {
       ...publicationData,
-      id: Date.now(), 
+      id: Date.now(),
       status: "scheduled",
     };
     setPublications([...publications, newPublication]);
@@ -142,7 +148,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AppContext.Provider 
+    <AppContext.Provider
       value={{
         user,
         isAuthenticated,
@@ -160,7 +166,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         deletePublication,
         oauthCompleted,
         setOauthCompleted,
-        updateClient
+        updateClient,
       }}
     >
       {children}

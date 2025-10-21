@@ -6,10 +6,10 @@ import { Icons } from "../../../shared/components/icons";
 import { ClientCard } from "../components/ClientCard";
 import { EmptyState } from "../components/EmptyState";
 import { AddClientModal } from "../components/AddClientModal";
-import { EditClientModal } from "../components/EditClientModal"; 
+import { EditClientModal } from "../components/EditClientModal";
 import { useApp } from "../../../shared/hooks/useApp";
 import { AlertCircle, CheckCircle } from "lucide-react";
-import type { ClientDB, UpdateClientDTO } from "../../../core/types"; 
+import type { ClientDB, UpdateClientDTO } from "../../../core/types";
 
 export function ClientsPage() {
   const {
@@ -17,7 +17,7 @@ export function ClientsPage() {
     addClient,
     deleteClient,
     loadClients,
-    updateClient, 
+    updateClient,
     oauthCompleted,
     setOauthCompleted,
   } = useApp();
@@ -35,7 +35,6 @@ export function ClientsPage() {
       return () => clearTimeout(timer);
     }
   }, [error]);
-
   useEffect(() => {
     if (success) {
       const timer = setTimeout(() => setSuccess(false), 3000);
@@ -48,7 +47,7 @@ export function ClientsPage() {
       try {
         setIsLoading(true);
         await loadClients();
-      } catch  {
+      } catch {
         setError("Error al cargar los clientes");
       } finally {
         setIsLoading(false);
@@ -76,7 +75,7 @@ export function ClientsPage() {
       setSuccess(true);
       setIsModalOpen(false);
       await loadClients();
-    } catch  {
+    } catch {
       setError("Error al agregar el cliente");
     }
   };
@@ -88,7 +87,7 @@ export function ClientsPage() {
       await loadClients();
       setIsEditModalOpen(false);
       setSelectedClient(null);
-    } catch  {
+    } catch {
       setError("Error al actualizar el cliente");
     }
   };
