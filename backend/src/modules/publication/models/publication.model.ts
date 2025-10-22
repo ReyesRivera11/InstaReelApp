@@ -1,4 +1,4 @@
-import { Prisma, ReelStatus } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import prisma from "../../../shared/lib/prisma";
 
 import { AppError } from "../../../core/errors/AppError";

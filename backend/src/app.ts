@@ -18,7 +18,7 @@ app.use(cookieParser());
 app.use(morgan('dev'));
 
 app.get('/healthcheck', (_req: Request, res: Response) => {
-  res.status(HttpCode.OK);
+  res.sendStatus(HttpCode.OK);
 });
 
 // Routes
