@@ -30,7 +30,7 @@ export class PublicationController {
 
     const publication = await getPublicationByIdService(id);
 
-    res.json(publication);
+    res.json({ publication });
   }
 
   static async scheduleReel(req: Request, res: Response) {
