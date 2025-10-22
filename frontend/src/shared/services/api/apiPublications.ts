@@ -21,6 +21,7 @@ export interface PublicationResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
+  publication?: T;
 }
 
 const API_BASE_URL =
@@ -198,7 +199,6 @@ class AppPublications {
           method: "GET",
         }
       );
-
       return await this.parseResponse<Publication>(response);
     } catch (error) {
       return {

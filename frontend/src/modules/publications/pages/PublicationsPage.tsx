@@ -6,12 +6,12 @@ import type {
   PublicationFilters,
   PaginatedPublications,
 } from "../../../core/types";
-import { PublicationDetailModal } from "../components/PublicationDetailModal";
-import { useApp } from "../../../shared/hooks/useApp";
-import { appPublications } from "../../../shared/services/api/apiPublications";
 
-import { AlertCircle, CheckCircle, X } from "lucide-react";
+import { AlertCircle, CheckCircle, X, RefreshCw } from "lucide-react";
+import { useApp } from "../../../shared/hooks/useApp";
 import { Alert } from "../../../shared/components/ui";
+import { PublicationDetailModal } from "../components/PublicationDetailModal";
+import { appPublications } from "../../../shared/services/api/apiPublications";
 
 type ViewMode = "table" | "calendar";
 
@@ -19,16 +19,17 @@ const PublicationsPage = () => {
   const { clients } = useApp();
   const [publications, setPublications] = useState<Publication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  console.log(publications);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedPublication, setSelectedPublication] =
-    useState<Publication | null>(null);
+  const [selectedPublicationId, setSelectedPublicationId] = useState<
+    number | null
+  >(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -80,7 +81,6 @@ const PublicationsPage = () => {
 
       const response: PaginatedPublications =
         await appPublications.getPublications(filters);
-
       if (response.publications && Array.isArray(response.publications)) {
         setPublications(response.publications);
         setTotalPages(response.totalPages);
@@ -92,7 +92,6 @@ const PublicationsPage = () => {
         setError("Error al cargar las publicaciones");
       }
     } catch (err) {
-      console.error("[v0] Error loading publications:", err);
       setPublications([]);
       setError(
         err instanceof Error ? err.message : "Error al cargar las publicaciones"
@@ -102,6 +101,18 @@ const PublicationsPage = () => {
     }
   }, [currentPage, debouncedSearchTerm, statusFilter]);
 
+  const handleRefresh = async () => {
+    try {
+      setIsRefreshing(true);
+      await loadPublications();
+      setSuccess(true);
+    } catch {
+      setError("Error al recargar las publicaciones");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   useEffect(() => {
     loadPublications();
   }, [loadPublications]);
@@ -109,8 +120,11 @@ const PublicationsPage = () => {
   useEffect(() => {
     if (currentPage !== 1) {
       setCurrentPage(1);
+    } else {
+      loadPublications();
     }
-  }, [debouncedSearchTerm, statusFilter, currentPage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchTerm, statusFilter]);
 
   const getScheduledDate = (pub: Publication): string | undefined => {
     return pub.scheduled_date ?? pub.scheduledDate ?? undefined;
@@ -232,7 +246,6 @@ const PublicationsPage = () => {
           </div>
           <div className="space-y-1">
             {pubs.slice(0, 3).map((pub) => {
-              const client = clients.find((c) => c.id === pub.client_id);
               return (
                 <div
                   key={pub.id}
@@ -247,7 +260,7 @@ const PublicationsPage = () => {
                 >
                   <p className="line-clamp-1">{pub.title}</p>
                   <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
-                    {client?.name || "Cliente desconocido"}
+                    {pub.clientName || "Cliente desconocido"}
                   </p>
                   <p className="text-sm text-muted-foreground mt-0.5">
                     {formatPublicationTime(pub)}
@@ -418,17 +431,22 @@ const PublicationsPage = () => {
   };
 
   const handleViewDetails = (publication: Publication) => {
-    setSelectedPublication(publication);
+    setSelectedPublicationId(publication.id);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setSelectedPublication(null);
+    setSelectedPublicationId(null);
   };
 
-  const getClientName = (clientId: number) => {
-    const client = clients.find((c) => c.id === clientId);
+  const getClientName = (publication: Publication) => {
+    if (publication.clientName) {
+      return publication.clientName;
+    }
+
+    // Fallback to looking up in clients array
+    const client = clients.find((c) => c.id === publication.client_id);
     return client
       ? `${client.name} (@${client.username})`
       : "Cliente desconocido";
@@ -466,16 +484,13 @@ const PublicationsPage = () => {
     <>
       {error && (
         <Alert variant="error" icon={<AlertCircle className="w-5 h-5" />}>
-          <div className="ml-2">{error}</div>
+          {error}
         </Alert>
       )}
 
       {success && (
         <Alert variant="success" icon={<CheckCircle className="w-5 h-5" />}>
-          <CheckCircle className="h-4 w-4 text-green-600" />
-          <div className="ml-2">
-            ¡Fecha de publicación actualizada exitosamente!
-          </div>
+          ¡Publicaciones actualizadas exitosamente!
         </Alert>
       )}
 
@@ -490,57 +505,71 @@ const PublicationsPage = () => {
             </p>
           </div>
 
-          <div className="flex gap-2 bg-muted p-1 rounded-lg">
+          <div className="flex gap-2">
             <button
-              onClick={() => setViewMode("table")}
-              className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors ${
-                viewMode === "table"
-                  ? "bg-background shadow-sm"
-                  : "hover:bg-background/50"
-              }`}
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-sm hover:shadow-md font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Recargar publicaciones"
             >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <rect x="3" y="3" width="7" height="7" strokeWidth="2" />
-                <rect x="14" y="3" width="7" height="7" strokeWidth="2" />
-                <rect x="14" y="14" width="7" height="7" strokeWidth="2" />
-                <rect x="3" y="14" width="7" height="7" strokeWidth="2" />
-              </svg>
-              Tabla
+              <RefreshCw
+                className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
+              />
+              {isRefreshing ? "Recargando..." : "Recargar"}
             </button>
-            <button
-              onClick={() => setViewMode("calendar")}
-              className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors ${
-                viewMode === "calendar"
-                  ? "bg-background shadow-sm"
-                  : "hover:bg-background/50"
-              }`}
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+
+            <div className="flex gap-2 bg-muted p-1 rounded-lg">
+              <button
+                onClick={() => setViewMode("table")}
+                className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors ${
+                  viewMode === "table"
+                    ? "bg-background shadow-sm"
+                    : "hover:bg-background/50"
+                }`}
               >
-                <rect
-                  x="3"
-                  y="4"
-                  width="18"
-                  height="18"
-                  rx="2"
-                  ry="2"
-                  strokeWidth="2"
-                />
-                <line x1="16" y1="2" x2="16" y2="6" strokeWidth="2" />
-                <line x1="8" y1="2" x2="8" y2="6" strokeWidth="2" />
-                <line x1="3" y1="10" x2="21" y2="10" strokeWidth="2" />
-              </svg>
-              Calendario
-            </button>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <rect x="3" y="3" width="7" height="7" strokeWidth="2" />
+                  <rect x="14" y="3" width="7" height="7" strokeWidth="2" />
+                  <rect x="14" y="14" width="7" height="7" strokeWidth="2" />
+                  <rect x="3" y="14" width="7" height="7" strokeWidth="2" />
+                </svg>
+                Tabla
+              </button>
+              <button
+                onClick={() => setViewMode("calendar")}
+                className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors ${
+                  viewMode === "calendar"
+                    ? "bg-background shadow-sm"
+                    : "hover:bg-background/50"
+                }`}
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <rect
+                    x="3"
+                    y="4"
+                    width="18"
+                    height="18"
+                    rx="2"
+                    ry="2"
+                    strokeWidth="2"
+                  />
+                  <line x1="16" y1="2" x2="16" y2="6" strokeWidth="2" />
+                  <line x1="8" y1="2" x2="8" y2="6" strokeWidth="2" />
+                  <line x1="3" y1="10" x2="21" y2="10" strokeWidth="2" />
+                </svg>
+                Calendario
+              </button>
+            </div>
           </div>
         </div>
 
@@ -578,7 +607,7 @@ const PublicationsPage = () => {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="w-full px-3 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
-                <option value="">Todos los estados</option>
+                <option value="all">Todos los estados</option>
                 <option value="scheduled">Programado</option>
                 <option value="published">Publicado</option>
               </select>
@@ -661,9 +690,7 @@ const PublicationsPage = () => {
                                 </div>
                               </td>
                               <td className="p-4">
-                                <p className="text-sm">
-                                  {getClientName(pub.client_id)}
-                                </p>
+                                <p className="text-sm">{getClientName(pub)}</p>
                               </td>
                               <td className="p-4">
                                 <div>
@@ -772,8 +799,7 @@ const PublicationsPage = () => {
         )}
 
         <PublicationDetailModal
-          publication={selectedPublication}
-          client={clients.find((c) => c.id === selectedPublication?.client_id)}
+          publicationId={selectedPublicationId}
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           onUpdate={handleUpdatePublication}

@@ -207,7 +207,6 @@ export default function ScheduleReelPage() {
       }
 
       const containerMediaId = containerResponse.id;
-      console.log(containerMediaId);
       setUploadProgress("Enviando datos al servidor...");
 
       const formData = new FormData();
@@ -216,7 +215,6 @@ export default function ScheduleReelPage() {
       formData.append("description", description);
 
       const scheduledDateTime = toLocalISO(scheduledDate, scheduledTime);
-      console.log(scheduledDateTime);
       formData.append("scheduled_date", scheduledDateTime);
 
       formData.append("container_media_id", containerMediaId);
@@ -226,7 +224,6 @@ export default function ScheduleReelPage() {
       setUploadProgress("Procesando reel en el servidor...");
 
       const response = await appPublications.scheduleReel(formData);
-      console.log(response);
       if (!response) {
         throw new Error("Error al programar el reel");
       }
@@ -308,7 +305,11 @@ export default function ScheduleReelPage() {
   }, [success]);
 
   const getMinDate = () => {
-    return new Date().toISOString().split("T")[0];
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   };
 
   return (

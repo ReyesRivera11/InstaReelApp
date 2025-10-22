@@ -102,7 +102,6 @@ class ApiClient {
     const contentType = response.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
       const text = await response.text();
-      console.log("🔵 Respuesta sin JSON:", text);
 
       if (text.trim().toUpperCase() === "OK") {
         const fakeJson = JSON.stringify({ success: true, message: text });
@@ -157,7 +156,6 @@ class ApiClient {
           return dataParsed;
         } else {
           const text = await response.text();
-          console.log("⚠️ Respuesta sin JSON:", text);
           return {
             success: true,
             message:

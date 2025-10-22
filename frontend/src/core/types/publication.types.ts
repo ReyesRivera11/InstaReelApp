@@ -12,6 +12,8 @@ export interface Publication {
   videoSize?: number | null;
   container_media_id?: string | null;
   containerMediaId?: string | null;
+  clientName?: string;
+  media_url?: string;
 }
 
 export interface CreatePublicationDto {

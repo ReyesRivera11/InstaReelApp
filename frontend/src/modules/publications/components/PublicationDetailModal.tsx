@@ -1,27 +1,117 @@
 "use client";
-import type { Publication, ClientDB } from "../../../core/types";
+
+import { useState, useEffect } from "react";
+import type { Publication } from "../../../core/types";
+import { appPublications } from "../../../shared/services/api/apiPublications";
+
 interface PublicationDetailModalProps {
-  publication: Publication | null;
-  client: ClientDB | undefined;
+  publicationId: number | null;
   isOpen: boolean;
   onClose: () => void;
   onUpdate?: () => void;
 }
 
 export function PublicationDetailModal({
-  publication,
-  client,
+  publicationId,
   isOpen,
   onClose,
 }: PublicationDetailModalProps) {
-  if (!publication || !isOpen) return null;
+  const [publication, setPublication] = useState<Publication | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPublication = async () => {
+      if (!publicationId || !isOpen) {
+        setPublication(null);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const response = await appPublications.getPublicationById(
+          publicationId.toString()
+        );
+        if (response.publication) {
+          setPublication(response.publication);
+        } else {
+          setError(response.error || "Error al cargar la publicación");
+        }
+      } catch {
+        setError("Error al cargar los detalles de la publicación");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPublication();
+  }, [publicationId, isOpen]);
+
+  if (!isOpen) return null;
+
+  if (isLoading) {
+    return (
+      <div
+        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        onClick={onClose}
+      >
+        <div
+          className="bg-card rounded-lg shadow-xl max-w-3xl w-full p-12"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-muted-foreground">Cargando detalles...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div
+        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        onClick={onClose}
+      >
+        <div
+          className="bg-card rounded-lg shadow-xl max-w-3xl w-full p-12"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <svg
+              className="w-12 h-12 text-destructive"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <circle cx="12" cy="12" r="10" strokeWidth="2" />
+              <line x1="12" y1="8" x2="12" y2="12" strokeWidth="2" />
+              <line x1="12" y1="16" x2="12.01" y2="16" strokeWidth="2" />
+            </svg>
+            <p className="text-muted-foreground">{error}</p>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!publication) return null;
 
   const getScheduledDate = (pub: Publication): string | undefined => {
     return pub.scheduled_date ?? pub.scheduledDate ?? undefined;
   };
 
   const getVideoUrl = (pub: Publication): string | undefined => {
-    return pub.video_url ?? pub.videoUrl ?? undefined;
+    return pub.media_url ?? pub.video_url ?? undefined;
   };
 
   const formatDate = (dateString?: string) => {
@@ -55,7 +145,6 @@ export function PublicationDetailModal({
   const getInstagramEmbedUrl = (url?: string) => {
     if (!url) return null;
 
-    // Extract reel ID from various Instagram URL formats
     const reelMatch = url.match(/instagram\.com\/reel\/([A-Za-z0-9_-]+)/);
     if (reelMatch && reelMatch[1]) {
       return `https://www.instagram.com/reel/${reelMatch[1]}/embed`;
@@ -68,12 +157,14 @@ export function PublicationDetailModal({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "scheduled":
+      case "SCHEDULED":
         return (
           <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
             PROGRAMADO
           </span>
         );
       case "PUBLISHED":
+      case "published":
         return (
           <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
             PUBLICADO
@@ -88,6 +179,13 @@ export function PublicationDetailModal({
     }
   };
 
+  const getClientName = () => {
+    if (publication.clientName) {
+      return publication.clientName;
+    }
+    return "Cliente desconocido";
+  };
+
   return (
     <div
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
@@ -100,9 +198,9 @@ export function PublicationDetailModal({
         <div className="p-6 border-b border-border">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h2>{publication.title}</h2>
+              <h2 className="text-2xl font-bold">{publication.title}</h2>
               <p className="text-sm text-muted-foreground mt-2">
-                "Detalles completos de la publicación programada"
+                Detalles completos de la publicación programada
               </p>
             </div>
             {getStatusBadge(publication.status)}
@@ -149,10 +247,7 @@ export function PublicationDetailModal({
                 </svg>
                 <span className="text-sm text-muted-foreground">Cliente</span>
               </div>
-              <p>{client?.name || "Cliente desconocido"}</p>
-              <p className="text-sm text-muted-foreground">
-                @{client?.username}
-              </p>
+              <p>{getClientName()}</p>
             </div>
           </div>
 
@@ -381,14 +476,12 @@ export function PublicationDetailModal({
           </div>
 
           <div className="flex gap-3 pt-4 border-t border-border">
-            <>
-              <button
-                onClick={onClose}
-                className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
-              >
-                Cerrar
-              </button>
-            </>
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+            >
+              Cerrar
+            </button>
           </div>
         </div>
       </div>
