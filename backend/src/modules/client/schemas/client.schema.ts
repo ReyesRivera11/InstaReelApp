@@ -9,7 +9,7 @@ export const createClientSchema = z.object({
   access_token: z.string().optional(),
   data_access_expiration_time: z.string().optional(),
   expires_in: z.string().optional(),
-  description: z.string().min(3).optional(),
+  description: z.string().optional(),
 });
 
 export const updateClientSchema = createClientSchema
