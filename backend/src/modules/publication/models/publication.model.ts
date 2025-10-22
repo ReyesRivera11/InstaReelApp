@@ -86,6 +86,16 @@ export class PublicationModel {
   static async getPublicationById(id: number) {
     const publication = await prisma.instagram_reels.findUnique({
       where: { id },
+      include: {
+        client: {
+          select: {
+            username: true
+          },
+        },
+      },
+      omit: {
+        client_id: true
+      }
     });
 
     return publication;

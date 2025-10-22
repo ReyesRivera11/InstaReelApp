@@ -6,6 +6,7 @@ import { PORT } from './shared/config/env';
 import router from './shared/routes/index';
 import { errorHandlerMiddleware } from './shared/middlewares/errorHandler';
 import { corsMiddleware } from './shared/middlewares/cors';
+import { HttpCode } from './shared/enums/HttpCode';
 
 const app = express();
 
@@ -17,7 +18,7 @@ app.use(cookieParser());
 app.use(morgan('dev'));
 
 app.get('/healthcheck', (_req: Request, res: Response) => {
-  res.status(200).send('OK');
+  res.status(HttpCode.OK);
 });
 
 // Routes
