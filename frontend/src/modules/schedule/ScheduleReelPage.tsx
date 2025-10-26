@@ -133,10 +133,8 @@ export default function ScheduleReelPage() {
     return Object.keys(errors).length === 0;
   };
   function toLocalISO(date: string, time: string) {
-    // Separamos hora y minutos del input
     const [hours, minutes] = time.split(":").map(Number);
 
-    // Creamos la fecha local exacta sin conversión implícita
     const localDate = new Date();
     localDate.setFullYear(Number(date.split("-")[0]));
     localDate.setMonth(Number(date.split("-")[1]) - 1);
@@ -146,8 +144,7 @@ export default function ScheduleReelPage() {
     localDate.setSeconds(0);
     localDate.setMilliseconds(0);
 
-    // Calculamos el offset local (ej. -06:00)
-    const tzOffset = -localDate.getTimezoneOffset(); // minutos
+    const tzOffset = -localDate.getTimezoneOffset(); 
     const sign = tzOffset >= 0 ? "+" : "-";
     const diffHours = String(Math.floor(Math.abs(tzOffset) / 60)).padStart(
       2,
@@ -156,7 +153,6 @@ export default function ScheduleReelPage() {
     const diffMinutes = String(Math.abs(tzOffset) % 60).padStart(2, "0");
     const offset = `${sign}${diffHours}:${diffMinutes}`;
 
-    // Formateamos manualmente para evitar saltos UTC
     const isoLocal = `${localDate.getFullYear()}-${String(
       localDate.getMonth() + 1
     ).padStart(2, "0")}-${String(localDate.getDate()).padStart(

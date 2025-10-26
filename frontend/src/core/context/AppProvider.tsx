@@ -97,20 +97,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteClient = async (id: number) => {
-    try {
-      const response = await apiClient.deleteClient(id);
-      if (response.success) {
-        setClients(clients.filter((c) => c.id !== id));
+    const response = await apiClient.deleteClient(id);
+    if (response.success) {
+      setClients(clients.filter((c) => c.id !== id));
+    } else {
+      const errorMessage =
+        response.message || response.error || "No se pudo eliminar el cliente";
+
+      if (
+        errorMessage.toLowerCase().includes("eliminar") ||
+        errorMessage.toLowerCase().includes("constraint") ||
+        errorMessage.toLowerCase().includes("foreign key")
+      ) {
+        throw new Error(
+          "No se puede eliminar este cliente porque tiene registros vinculados (publicaciones, estadísticas, etc.)."
+        );
       }
-    } catch (error) {
-      console.error("[v0] Error deleting client:", error);
+
+      throw new Error(errorMessage);
     }
   };
 
   const updateClient = async (id: number, data: UpdateClientDTO) => {
     try {
       const response = await apiClient.editClient(id, data);
-
+      console.log(response);
       if (response.success) {
         setClients((prev) =>
           prev.map((c) => (c.id === id ? { ...c, ...data } : c))

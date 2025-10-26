@@ -55,7 +55,6 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
         setSuccess(true);
         setTimeout(() => {
           handleReset();
-          // Set flag in context to trigger modal close and reload in parent
           setOauthCompleted(true);
         }, 1500);
       } else if (event.data.type === "INSTAGRAM_OAUTH_ERROR") {
@@ -178,15 +177,6 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
         maxWidth="2xl"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="p-4 border rounded-lg flex gap-3 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-300 items-start">
-            <Icons.AlertCircle />
-            <p className="text-sm">
-              Al hacer clic en "Conectar con Instagram", se abrirá una ventana
-              de autenticación OAuth. El backend obtendrá automáticamente el
-              access token y el ID de Instagram.
-            </p>
-          </div>
-
           <div>
             <Input
               id="name"

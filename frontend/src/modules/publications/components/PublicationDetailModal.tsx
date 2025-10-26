@@ -34,6 +34,7 @@ export function PublicationDetailModal({
         const response = await appPublications.getPublicationById(
           publicationId.toString()
         );
+        console.log(response);
         if (response.publication) {
           setPublication(response.publication);
         } else {

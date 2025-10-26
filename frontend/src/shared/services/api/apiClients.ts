@@ -98,7 +98,6 @@ class ApiClient {
     };
 
     let response = await fetch(url, fetchOptions);
-
     const contentType = response.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
       const text = await response.text();
@@ -199,8 +198,10 @@ class ApiClient {
         method: "POST",
         body: JSON.stringify(data),
       });
+      console.log(response);
       return await response.json();
     } catch (error) {
+      console.log(error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "Error desconocido",
@@ -253,8 +254,10 @@ class ApiClient {
         credentials: "include",
         headers,
       });
+      console.log(response);
       return await response.json();
     } catch (error) {
+      console.log(error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "Error desconocido",

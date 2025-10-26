@@ -36,9 +36,9 @@ export function MetaCallbackPage() {
         expires_in: expiresIn,
         long_lived_token: longLivedToken,
       };
-
       try {
         const result = await apiClient.createClient(payload);
+
         if (result) {
           window.opener?.postMessage(
             { type: "INSTAGRAM_OAUTH_SUCCESS" },
@@ -63,7 +63,9 @@ export function MetaCallbackPage() {
         );
       } finally {
         localStorage.removeItem("pending_client");
-        window.close();
+        setTimeout(() => {
+          window.close();
+        }, 1000);
       }
     };
 

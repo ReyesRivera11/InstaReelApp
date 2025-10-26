@@ -766,12 +766,6 @@ const PublicationsPage = () => {
                           <polyline points="9 18 15 12 9 6" strokeWidth="2" />
                         </svg>
                       </button>
-                      <button
-                        onClick={() => setCurrentDate(new Date())}
-                        className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors text-sm"
-                      >
-                        Hoy
-                      </button>
                     </div>
                   </div>
                 </div>

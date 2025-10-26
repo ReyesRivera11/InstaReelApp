@@ -18,7 +18,7 @@ export interface AppContextType {
   setCurrentPage: (page: Page) => void;
   clients: ClientDB[];
   addClient: (data?: CreateClientDTO) => Promise<void>;
-  deleteClient: (id: number) => void;
+  deleteClient: (id: number) => Promise<void>;
   loadClients: () => Promise<void>;
 
   updateClient: (id: number, data: UpdateClientDTO) => Promise<void>;

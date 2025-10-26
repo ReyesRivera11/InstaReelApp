@@ -1,40 +1,58 @@
 "use client";
 
-import { Trash2, Instagram, Pencil, CheckCircle2 } from "lucide-react";
+import { Trash2, Instagram, Pencil, CheckCircle2, XCircle } from "lucide-react";
 import { useState } from "react";
 
-import type { ClientDB } from "../../../core/types";
 import {
+  Alert,
   Button,
   Card,
   CardContent,
   CardHeader,
+  Modal,
 } from "../../../shared/components/ui";
-import { Alert } from "../../../shared/components/ui/Alert";
-import { Modal } from "../../../shared/components/ui/Modal";
+import type { ClientDB } from "../../../core/types";
 
 interface ClientCardProps {
   client: ClientDB;
-  onDelete: (id: number) => void;
+  onDelete: (id: number) => Promise<void>;
   onEdit: (client: ClientDB) => void;
 }
 
 export function ClientCard({ client, onDelete, onEdit }: ClientCardProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [showErrorMessage, setShowErrorMessage] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDeleteClick = () => {
     setShowDeleteConfirm(true);
   };
 
-  const handleConfirmDelete = () => {
-    onDelete(client.id);
-    setShowDeleteConfirm(false);
-    setShowSuccessMessage(true);
-    // Auto-hide after 3 seconds
-    setTimeout(() => {
-      setShowSuccessMessage(false);
-    }, 3000);
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await onDelete(client.id);
+      setShowDeleteConfirm(false);
+      setShowSuccessMessage(true);
+      setTimeout(() => {
+        setShowSuccessMessage(false);
+      }, 3000);
+    } catch (error) {
+      setShowDeleteConfirm(false);
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "No se pudo eliminar el cliente"
+      );
+      setShowErrorMessage(true);
+      setTimeout(() => {
+        setShowErrorMessage(false);
+      }, 5000);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleCancelDelete = () => {
@@ -94,11 +112,19 @@ export function ClientCard({ client, onDelete, onEdit }: ClientCardProps) {
         maxWidth="sm"
       >
         <div className="flex gap-3 justify-end">
-          <Button variant="outline" onClick={handleCancelDelete}>
+          <Button
+            variant="outline"
+            onClick={handleCancelDelete}
+            disabled={isDeleting}
+          >
             Cancelar
           </Button>
-          <Button variant="destructive" onClick={handleConfirmDelete}>
-            Eliminar
+          <Button
+            variant="destructive"
+            onClick={handleConfirmDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? "Eliminando..." : "Eliminar"}
           </Button>
         </div>
       </Modal>
@@ -110,6 +136,15 @@ export function ClientCard({ client, onDelete, onEdit }: ClientCardProps) {
             <p className="text-sm opacity-90">
               El cliente se eliminó correctamente
             </p>
+          </div>
+        </Alert>
+      )}
+
+      {showErrorMessage && (
+        <Alert variant="error" icon={<XCircle className="w-5 h-5" />}>
+          <div>
+            <p className="font-semibold">Error al eliminar</p>
+            <p className="text-sm opacity-90">{errorMessage}</p>
           </div>
         </Alert>
       )}

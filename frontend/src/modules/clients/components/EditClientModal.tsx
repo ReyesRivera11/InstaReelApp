@@ -109,7 +109,7 @@ export function EditClientModal({
       await onSubmit(client.id, {
         name: name.trim(),
         username: username.trim(),
-        description: description.trim() || undefined,
+        description: description.trim() || "",
       });
       handleReset();
       onClose();
@@ -155,7 +155,6 @@ export function EditClientModal({
             </p>
           </div>
 
-          {/* Campo para editar el nombre */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium mb-2">
               Nombre del Cliente
