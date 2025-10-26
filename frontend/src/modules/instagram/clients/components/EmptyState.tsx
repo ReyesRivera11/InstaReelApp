@@ -1,7 +1,7 @@
 "use client";
 
 import { Instagram, Plus } from "lucide-react";
-import { Button, Card, CardContent } from "../../../shared/components/ui";
+import { Button, Card, CardContent } from "../../../../shared/components/ui";
 
 interface EmptyStateProps {
   onAddClient: () => void;

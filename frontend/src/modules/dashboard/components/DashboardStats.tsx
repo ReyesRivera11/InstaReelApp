@@ -26,9 +26,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
           </svg>
         </div>
         <div className="text-2xl font-bold">{stats.activeClients}</div>
-        <p className="text-xs text-muted-foreground mt-1">
-          Cuentas de Instagram
-        </p>
+        <p className="text-xs text-muted-foreground mt-1">Cuentas conectadas</p>
       </div>
 
       <div className="bg-card rounded-lg border border-border p-6">

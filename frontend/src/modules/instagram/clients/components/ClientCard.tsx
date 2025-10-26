@@ -10,8 +10,8 @@ import {
   CardContent,
   CardHeader,
   Modal,
-} from "../../../shared/components/ui";
-import type { ClientDB } from "../../../core/types";
+} from "../../../../shared/components/ui";
+import type { ClientDB } from "../../../../core/types";
 
 interface ClientCardProps {
   client: ClientDB;

@@ -1,3 +1,5 @@
+"use client";
+
 import type { InputHTMLAttributes, ReactNode } from "react";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -17,7 +19,14 @@ export function Input({
 }: InputProps) {
   return (
     <div className="space-y-2">
-      {label && <label htmlFor={props.id}>{label}</label>}
+      {label && (
+        <label
+          htmlFor={props.id}
+          className="block text-sm font-medium text-foreground"
+        >
+          {label}
+        </label>
+      )}
       <div className="relative">
         {leftIcon && (
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
@@ -25,9 +34,32 @@ export function Input({
           </div>
         )}
         <input
-          className={`w-full px-3 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+          className={`w-full px-3 py-2.5 bg-white border border-gray-300 rounded-lg text-foreground placeholder:text-muted-foreground transition-all duration-200 focus:outline-none ${
             leftIcon ? "pl-10" : ""
-          } ${rightIcon ? "pr-10" : ""} ${className}`}
+          } ${rightIcon ? "pr-10" : ""} ${
+            error ? "border-red-500" : ""
+          } ${className}`}
+          style={
+            !error
+              ? {
+                  borderColor: undefined,
+                }
+              : undefined
+          }
+          onFocus={(e) => {
+            if (!error) {
+              e.currentTarget.style.borderColor = "var(--brand-primary)";
+              e.currentTarget.style.boxShadow = `0 0 0 3px rgba(${getComputedStyle(
+                document.documentElement
+              )
+                .getPropertyValue("--brand-primary")
+                .trim()}, 0.1)`;
+            }
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = "";
+            e.currentTarget.style.boxShadow = "";
+          }}
           {...props}
         />
         {rightIcon && (
@@ -36,7 +68,7 @@ export function Input({
           </div>
         )}
       </div>
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-sm text-red-600 mt-1">{error}</p>}
     </div>
   );
 }

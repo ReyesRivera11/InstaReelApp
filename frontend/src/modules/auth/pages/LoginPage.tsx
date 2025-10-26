@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useEffect, useState } from "react";
-import { AlertCircle, CheckCircle, Instagram } from "lucide-react";
+import { AlertCircle, CheckCircle } from "lucide-react";
 import { Alert, Button, Card, Input } from "../../../shared/components/ui";
 import { useApp } from "../../../shared/hooks/useApp";
 import { apiClient } from "../../../shared/services/api/apiClients";
@@ -59,7 +59,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-slate-50 p-4">
       {error && (
         <Alert variant="error" icon={<AlertCircle className="w-5 h-5" />}>
           {error}
@@ -72,23 +72,38 @@ export function LoginPage() {
         </Alert>
       )}
 
-      <Card className="w-full max-w-md shadow-xl">
-        <div className="p-6 space-y-4 text-center border-b border-border">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl flex items-center justify-center">
-            <Instagram className="text-white w-8 h-8" />
+      <Card className="w-full max-w-md shadow-2xl border border-gray-100">
+        <div className="p-8 space-y-4 text-center border-b border-gray-100">
+          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-600 to-slate-800 rounded-2xl flex items-center justify-center shadow-lg">
+            <svg
+              className="text-white w-8 h-8"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
+            </svg>
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Reels Manager</h1>
+            <h1 className="text-2xl font-bold text-foreground">Social Hub</h1>
             <p className="text-muted-foreground">
-              Gestiona y programa tus publicaciones de Instagram
+              Gestiona todas tus redes sociales en un solo lugar
             </p>
           </div>
         </div>
 
-        <div className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="p-8">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
+              <label
+                htmlFor="email"
+                className="text-sm font-medium text-foreground"
+              >
                 Correo electrónico
               </label>
               <Input
@@ -103,7 +118,10 @@ export function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
+              <label
+                htmlFor="password"
+                className="text-sm font-medium text-foreground"
+              >
                 Contraseña
               </label>
               <Input
@@ -117,12 +135,16 @@ export function LoginPage() {
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button
+              type="submit"
+              className="w-full shadow-md hover:shadow-lg"
+              disabled={isLoading}
+            >
               {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
             </Button>
 
-            <p className="text-center text-sm text-muted-foreground">
-              Ingresa tus credenciales para acceder
+            <p className="text-center text-sm text-muted-foreground pt-2">
+              Conecta Instagram, Facebook, TikTok, WhatsApp y X
             </p>
           </form>
         </div>

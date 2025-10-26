@@ -5,13 +5,13 @@ import type {
   Publication,
   PublicationFilters,
   PaginatedPublications,
-} from "../../../core/types";
+} from "../../../../core/types";
 
 import { AlertCircle, CheckCircle, X, RefreshCw } from "lucide-react";
-import { useApp } from "../../../shared/hooks/useApp";
-import { Alert } from "../../../shared/components/ui";
+import { useApp } from "../../../../shared/hooks/useApp";
+import { Alert, Button } from "../../../../shared/components/ui";
 import { PublicationDetailModal } from "../components/PublicationDetailModal";
-import { appPublications } from "../../../shared/services/api/apiPublications";
+import { appPublications } from "../../../../shared/services/api/apiPublications";
 
 type ViewMode = "table" | "calendar";
 
@@ -445,7 +445,6 @@ const PublicationsPage = () => {
       return publication.clientName;
     }
 
-    // Fallback to looking up in clients array
     const client = clients.find((c) => c.id === publication.client_id);
     return client
       ? `${client.name} (@${client.username})`
@@ -506,17 +505,17 @@ const PublicationsPage = () => {
           </div>
 
           <div className="flex gap-2">
-            <button
+            <Button
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-sm hover:shadow-md font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Recargar publicaciones"
+              className="w-full sm:w-auto"
+              variant="gradient"
             >
               <RefreshCw
                 className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
               />
               {isRefreshing ? "Recargando..." : "Recargar"}
-            </button>
+            </Button>
 
             <div className="flex gap-2 bg-muted p-1 rounded-lg">
               <button
@@ -706,12 +705,13 @@ const PublicationsPage = () => {
                                 {getStatusBadge(pub.status)}
                               </td>
                               <td className="p-4 text-right">
-                                <button
+                                <Button
                                   onClick={() => handleViewDetails(pub)}
-                                  className="px-4 py-2 text-sm bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 rounded-lg transition-all shadow-sm hover:shadow-md font-medium"
+                                  className="w-full sm:w-auto"
+                                  variant="gradient"
                                 >
                                   Ver detalles
-                                </button>
+                                </Button>
                               </td>
                             </tr>
                           ))}

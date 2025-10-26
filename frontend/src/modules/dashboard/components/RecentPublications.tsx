@@ -59,7 +59,7 @@ export function RecentPublications({ publications }: RecentPublicationsProps) {
               </p>
               <p className="text-sm text-muted-foreground">
                 No hay publicaciones registradas. Comienza programando tu primer
-                reel.
+                contenido.
               </p>
             </div>
           ) : (

@@ -12,8 +12,8 @@ import {
   CardHeader,
   CardContent,
   Alert,
-} from "../../shared/components/ui";
-import { useApp } from "../../shared/hooks/useApp";
+} from "../../../shared/components/ui";
+import { useApp } from "../../../shared/hooks/useApp";
 import {
   AlertCircle,
   Calendar,
@@ -22,10 +22,10 @@ import {
   Loader2,
   Upload,
 } from "lucide-react";
-import type { ClientDB } from "../../core/types";
-import { apiClient } from "../../shared/services/api/apiClients";
-import { metaApi } from "../../shared/services/api/apiMeta";
-import { appPublications } from "../../shared/services/api/apiPublications";
+import type { ClientDB } from "../../../core/types";
+import { apiClient } from "../../../shared/services/api/apiClients";
+import { metaApi } from "../../../shared/services/api/apiMeta";
+import { appPublications } from "../../../shared/services/api/apiPublications";
 
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
 const MIN_TITLE_LENGTH = 3;
@@ -144,7 +144,7 @@ export default function ScheduleReelPage() {
     localDate.setSeconds(0);
     localDate.setMilliseconds(0);
 
-    const tzOffset = -localDate.getTimezoneOffset(); 
+    const tzOffset = -localDate.getTimezoneOffset();
     const sign = tzOffset >= 0 ? "+" : "-";
     const diffHours = String(Math.floor(Math.abs(tzOffset) / 60)).padStart(
       2,
@@ -508,7 +508,7 @@ export default function ScheduleReelPage() {
               </div>
             )}
 
-            <div className="flex gap-3 pt-4">
+            <div className=" gap-3 grid grid-cols-1 md:grid-cols-2">
               <Button
                 type="button"
                 variant="outline"
@@ -518,10 +518,10 @@ export default function ScheduleReelPage() {
               >
                 Cancelar
               </Button>
-              <Button
+              <button
                 type="submit"
-                fullWidth
                 disabled={clients.length === 0 || isLoading}
+                className=" px-4 py-2 bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isLoading ? (
                   <>
@@ -531,7 +531,7 @@ export default function ScheduleReelPage() {
                 ) : (
                   "Programar Reel"
                 )}
-              </Button>
+              </button>
             </div>
           </form>
         </CardContent>

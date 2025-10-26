@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Publication } from "../../../core/types";
-import { appPublications } from "../../../shared/services/api/apiPublications";
+import type { Publication } from "../../../../core/types";
+import { appPublications } from "../../../../shared/services/api/apiPublications";
 
 interface PublicationDetailModalProps {
   publicationId: number | null;

@@ -58,7 +58,7 @@ export default function DashboardPage() {
       <div>
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <p className="text-muted-foreground">
-          Bienvenido a tu panel de gestión de Instagram Reels
+          Bienvenido a tu panel de gestión multi-plataforma
         </p>
       </div>
 

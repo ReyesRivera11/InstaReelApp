@@ -4,8 +4,8 @@ import type React from "react";
 import { useState, useEffect } from "react";
 
 import { AlertCircle } from "lucide-react";
-import type { ClientDB, UpdateClientDTO } from "../../../core/types";
-import { Button, Input, Textarea } from "../../../shared/components/ui";
+import type { ClientDB, UpdateClientDTO } from "../../../../core/types";
+import { Button, Input, Textarea } from "../../../../shared/components/ui";
 
 interface EditClientModalProps {
   isOpen: boolean;
@@ -235,17 +235,17 @@ export function EditClientModal({
               variant="outline"
               onClick={handleCancel}
               disabled={isSubmitting}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto bg-transparent"
             >
               Cancelar
             </Button>
-            <Button
+            <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto px-4 py-2 bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? "Guardando..." : "Guardar Cambios"}
-            </Button>
+            </button>
           </div>
         </form>
       </div>
