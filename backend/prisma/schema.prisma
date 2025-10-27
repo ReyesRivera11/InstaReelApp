@@ -28,6 +28,7 @@ model client {
   id               Int     @id @default(autoincrement())
   name             String
   username         String  @unique
+  social_identity  SocialIdentity 
   description      String?
   insta_id         String?
   long_lived_token String? @db.VarChar(250)
@@ -46,6 +47,11 @@ model instagram_reels {
   scheduled_date     DateTime?
   container_media_id String?    @unique
   created_at         DateTime?  @default(now())
+}
+
+enum SocialIdentity {
+  INSTAGRAM
+  FACEBOOK
 }
 
 enum ReelStatus {
