@@ -1,7 +1,7 @@
+import { axiosInstance } from "./apiBase";
 import type { DashboardData } from "../../../core/types/dashboard.types";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import type { AxiosError } from "axios";
+import axios from "axios";
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -9,47 +9,41 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
+interface ErrorResponse {
+  message?: string;
+  error?: string;
+}
+
 class ApiDashboard {
-  private baseURL: string;
-
-  constructor(baseURL: string) {
-    this.baseURL = baseURL;
-  }
-
   async getDashboard(): Promise<ApiResponse<DashboardData>> {
-    const token = localStorage.getItem("auth_token");
-
-    if (!token) {
-      return {
-        success: false,
-        error: "No se encontró el token de autenticación",
-      };
-    }
-
     try {
-      const response = await fetch(`${this.baseURL}/dashboard`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        credentials: "include",
-      });
+      const response = await axiosInstance.get<DashboardData>("/dashboard");
 
-      if (!response.ok) {
-        const errorText = await response.text();
+      return {
+        success: true,
+        data: response.data,
+      };
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError<ErrorResponse>;
+        if (axiosError.response?.status === 401) {
+          localStorage.removeItem("auth_token");
+          return {
+            success: false,
+            error: "Sesión expirada. Por favor, inicia sesión nuevamente.",
+          };
+        }
+
         return {
           success: false,
-          error: `Error ${response.status}: ${errorText}`,
+          error:
+            axiosError.response?.data?.message ||
+            axiosError.response?.data?.error ||
+            axiosError.message ||
+            `Error del servidor: ${axiosError.response?.status}`,
         };
       }
 
-      const json: DashboardData = await response.json();
-      return {
-        success: true,
-        data: json,
-      };
-    } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : "Error desconocido",
@@ -58,4 +52,4 @@ class ApiDashboard {
   }
 }
 
-export const apiDashboard = new ApiDashboard(API_BASE_URL);
+export const apiDashboard = new ApiDashboard();

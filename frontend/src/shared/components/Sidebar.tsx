@@ -152,7 +152,7 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
     <div className="w-64 bg-sidebar border-r border-sidebar-border h-screen flex flex-col">
       <div className="p-6 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-slate-800 to-slate-600 rounded-xl flex items-center justify-center shadow-sm">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-slate-800 rounded-xl flex items-center justify-center shadow-sm">
             <svg
               className="w-6 h-6 text-white"
               fill="none"

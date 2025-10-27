@@ -63,7 +63,7 @@ export function PublicationDetailModal({
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex flex-col items-center justify-center space-y-4">
-            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
             <p className="text-muted-foreground">Cargando detalles...</p>
           </div>
         </div>
@@ -184,7 +184,7 @@ export function PublicationDetailModal({
     if (publication.clientName) {
       return publication.clientName;
     }
-    return "Cliente desconocido";
+    return "Página desconocida";
   };
 
   return (
@@ -209,27 +209,15 @@ export function PublicationDetailModal({
         </div>
 
         <div className="p-6 space-y-6">
+          {/* CLIENTE */}
           <div className="flex items-start gap-4 p-4 bg-muted/50 rounded-lg">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 bg-[#1877F2] rounded-full flex items-center justify-center flex-shrink-0">
               <svg
                 className="w-6 h-6 text-white"
-                fill="none"
-                stroke="currentColor"
+                fill="currentColor"
                 viewBox="0 0 24 24"
               >
-                <rect
-                  x="2"
-                  y="2"
-                  width="20"
-                  height="20"
-                  rx="5"
-                  ry="5"
-                  strokeWidth="2"
-                />
-                <path
-                  d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"
-                  strokeWidth="2"
-                />
+                <path d="M24 12.073c0-6.627-5.373-12-12-12S0 5.446 0 12.073c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953h-1.514c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
               </svg>
             </div>
             <div className="flex-1">
@@ -246,12 +234,15 @@ export function PublicationDetailModal({
                   />
                   <circle cx="12" cy="7" r="4" strokeWidth="2" />
                 </svg>
-                <span className="text-sm text-muted-foreground">Cliente</span>
+                <span className="text-sm text-muted-foreground">
+                  Página de Facebook
+                </span>
               </div>
               <p>{getClientName()}</p>
             </div>
           </div>
 
+          {/* VISTA PREVIA - IGUAL AL SEGUNDO COMPONENTE */}
           <div>
             <div className="flex items-center gap-2 mb-3">
               <svg
@@ -315,7 +306,7 @@ export function PublicationDetailModal({
                     href={videoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-md hover:shadow-lg font-medium"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#1877F2] text-white rounded-lg hover:bg-blue-700 transition-all shadow-md hover:shadow-lg font-medium"
                   >
                     <svg
                       className="w-5 h-5"
@@ -343,7 +334,7 @@ export function PublicationDetailModal({
                         strokeLinecap="round"
                       />
                     </svg>
-                    Ver Reel en Instagram
+                    Ver Reel en Facebook
                     <svg
                       className="w-4 h-4"
                       fill="none"
@@ -403,6 +394,7 @@ export function PublicationDetailModal({
             )}
           </div>
 
+          {/* DESCRIPCIÓN */}
           <div>
             <div className="flex items-center gap-2 mb-3">
               <svg
@@ -421,7 +413,7 @@ export function PublicationDetailModal({
                 <polyline points="10 9 9 9 8 9" strokeWidth="2" />
               </svg>
               <span className="text-sm text-muted-foreground">
-                Descripción / Caption
+                Descripción / Contenido
               </span>
             </div>
             <div className="p-4 bg-muted/50 rounded-lg whitespace-pre-wrap">
@@ -429,6 +421,7 @@ export function PublicationDetailModal({
             </div>
           </div>
 
+          {/* FECHA Y HORA */}
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -476,6 +469,7 @@ export function PublicationDetailModal({
             </div>
           </div>
 
+          {/* CERRAR */}
           <div className="flex gap-3 pt-4 border-t border-border">
             <button
               onClick={onClose}

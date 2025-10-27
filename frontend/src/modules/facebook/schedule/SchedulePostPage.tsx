@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useState, useEffect } from "react";
 import {
   Button,
@@ -27,14 +26,14 @@ import { apiClient } from "../../../shared/services/api/instagram/apiClients";
 import { metaApi } from "../../../shared/services/api/instagram/apiMeta";
 import { appPublications } from "../../../shared/services/api/instagram/apiPublications";
 
-const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
 const MIN_TITLE_LENGTH = 3;
 const MAX_TITLE_LENGTH = 100;
 const MIN_DESCRIPTION_LENGTH = 1;
 const MAX_DESCRIPTION_LENGTH = 2200;
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/x-msvideo"];
 
-export default function ScheduleReelPage() {
+export default function ScheduleFacebookReelPage() {
   const { clients, setCurrentPage } = useApp();
   const [clientId, setClientId] = useState("");
   const [selectedClientData, setSelectedClientData] = useState<ClientDB | null>(
@@ -62,15 +61,13 @@ export default function ScheduleReelPage() {
 
   const handleClientChange = async (newClientId: string) => {
     setClientId(newClientId);
-    setValidationErrors({
-      ...validationErrors,
-      client: undefined,
-    });
+    setValidationErrors({ ...validationErrors, client: undefined });
 
     if (!newClientId) {
       setSelectedClientData(null);
       return;
     }
+
     setIsLoadingClient(true);
     try {
       const response = await apiClient.getClientById(
@@ -90,41 +87,35 @@ export default function ScheduleReelPage() {
     }
   };
 
+  // 🧩 Validaciones
   const validateForm = (): boolean => {
     const errors: typeof validationErrors = {};
 
-    if (!clientId) {
-      errors.client = "Debes seleccionar un cliente";
-    }
+    if (!clientId) errors.client = "Debes seleccionar una página de Facebook";
 
-    if (title.length < MIN_TITLE_LENGTH) {
+    if (title.length < MIN_TITLE_LENGTH)
       errors.title = `El título debe tener al menos ${MIN_TITLE_LENGTH} caracteres`;
-    } else if (title.length > MAX_TITLE_LENGTH) {
+    else if (title.length > MAX_TITLE_LENGTH)
       errors.title = `El título no puede exceder ${MAX_TITLE_LENGTH} caracteres`;
-    }
 
-    if (description.length < MIN_DESCRIPTION_LENGTH) {
+    if (description.length < MIN_DESCRIPTION_LENGTH)
       errors.description = "La descripción es requerida";
-    } else if (description.length > MAX_DESCRIPTION_LENGTH) {
+    else if (description.length > MAX_DESCRIPTION_LENGTH)
       errors.description = `La descripción no puede exceder ${MAX_DESCRIPTION_LENGTH} caracteres`;
-    }
 
-    if (!videoFile) {
-      errors.video = "Debes seleccionar un archivo de video";
-    } else if (videoFile.size > MAX_VIDEO_SIZE) {
+    if (!videoFile) errors.video = "Debes seleccionar un archivo de video";
+    else if (videoFile.size > MAX_VIDEO_SIZE)
       errors.video = `El video no puede exceder ${
         MAX_VIDEO_SIZE / (1024 * 1024)
       }MB`;
-    } else if (!ALLOWED_VIDEO_TYPES.includes(videoFile.type)) {
+    else if (!ALLOWED_VIDEO_TYPES.includes(videoFile.type))
       errors.video = "Formato de video no válido. Usa MP4, MOV o AVI";
-    }
 
     if (!scheduledDate || !scheduledTime) {
       errors.date = "Debes seleccionar fecha y hora de publicación";
     } else {
       const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
-      const now = new Date();
-      if (scheduledDateTime <= now) {
+      if (scheduledDateTime <= new Date()) {
         errors.date = "La fecha de publicación debe ser futura";
       }
     }
@@ -132,42 +123,26 @@ export default function ScheduleReelPage() {
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
+
   function toLocalISO(date: string, time: string) {
     const [hours, minutes] = time.split(":").map(Number);
-
-    const localDate = new Date();
-    localDate.setFullYear(Number(date.split("-")[0]));
-    localDate.setMonth(Number(date.split("-")[1]) - 1);
-    localDate.setDate(Number(date.split("-")[2]));
-    localDate.setHours(hours);
-    localDate.setMinutes(minutes);
-    localDate.setSeconds(0);
-    localDate.setMilliseconds(0);
-
+    const localDate = new Date(date);
+    localDate.setHours(hours, minutes, 0, 0);
     const tzOffset = -localDate.getTimezoneOffset();
     const sign = tzOffset >= 0 ? "+" : "-";
-    const diffHours = String(Math.floor(Math.abs(tzOffset) / 60)).padStart(
+    const offsetHours = String(Math.floor(Math.abs(tzOffset) / 60)).padStart(
       2,
       "0"
     );
-    const diffMinutes = String(Math.abs(tzOffset) % 60).padStart(2, "0");
-    const offset = `${sign}${diffHours}:${diffMinutes}`;
-
-    const isoLocal = `${localDate.getFullYear()}-${String(
-      localDate.getMonth() + 1
-    ).padStart(2, "0")}-${String(localDate.getDate()).padStart(
-      2,
-      "0"
-    )}T${String(localDate.getHours()).padStart(2, "0")}:${String(
-      localDate.getMinutes()
-    ).padStart(2, "0")}:00${offset}`;
-
-    return isoLocal;
+    const offsetMinutes = String(Math.abs(tzOffset) % 60).padStart(2, "0");
+    return `${localDate
+      .toISOString()
+      .slice(0, 19)}${sign}${offsetHours}:${offsetMinutes}`;
   }
 
+  // 🚀 Enviar formulario
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validateForm()) {
       setError("Por favor corrige los errores en el formulario");
       return;
@@ -179,13 +154,13 @@ export default function ScheduleReelPage() {
     }
 
     if (!selectedClientData) {
-      setError("No se pudieron cargar los datos del cliente");
+      setError("No se pudieron cargar los datos de la página");
       return;
     }
 
     setIsLoading(true);
     setError(null);
-    setUploadProgress("Creando contenedor de media en Instagram...");
+    setUploadProgress("Creando contenedor de media en Facebook...");
 
     try {
       const containerResponse = await metaApi.createMediaContainer(
@@ -198,9 +173,8 @@ export default function ScheduleReelPage() {
         }
       );
 
-      if (!containerResponse.id) {
+      if (!containerResponse.id)
         throw new Error("No se pudo crear el contenedor de media");
-      }
 
       const containerMediaId = containerResponse.id;
       setUploadProgress("Enviando datos al servidor...");
@@ -209,20 +183,17 @@ export default function ScheduleReelPage() {
       formData.append("client_id", clientId);
       formData.append("title", title);
       formData.append("description", description);
-
-      const scheduledDateTime = toLocalISO(scheduledDate, scheduledTime);
-      formData.append("scheduled_date", scheduledDateTime);
-
+      formData.append(
+        "scheduled_date",
+        toLocalISO(scheduledDate, scheduledTime)
+      );
       formData.append("container_media_id", containerMediaId);
-
       formData.append("reel", videoFile);
 
       setUploadProgress("Procesando reel en el servidor...");
 
       const response = await appPublications.scheduleReel(formData);
-      if (!response) {
-        throw new Error("Error al programar el reel");
-      }
+      if (!response) throw new Error("Error al programar el reel");
 
       setSuccess(true);
       setClientId("");
@@ -235,9 +206,7 @@ export default function ScheduleReelPage() {
       setValidationErrors({});
       setUploadProgress("");
 
-      setTimeout(() => {
-        setCurrentPage("publications");
-      }, 2000);
+      setTimeout(() => setCurrentPage("facebook-publications"), 2000);
     } catch (err) {
       setError(
         err instanceof Error
@@ -250,15 +219,15 @@ export default function ScheduleReelPage() {
     }
   };
 
+  // 🎥 Manejo del archivo de video (solo videos)
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-
     if (!file) return;
 
     const errors: typeof validationErrors = { ...validationErrors };
 
     if (!file.type.startsWith("video/")) {
-      errors.video = "Por favor selecciona un archivo de video válido";
+      errors.video = "Solo se permiten archivos de video (MP4, MOV, AVI)";
       setValidationErrors(errors);
       return;
     }
@@ -284,28 +253,21 @@ export default function ScheduleReelPage() {
 
   useEffect(() => {
     if (error) {
-      const timer = setTimeout(() => {
-        setError(null);
-      }, 3000);
+      const timer = setTimeout(() => setError(null), 3000);
       return () => clearTimeout(timer);
     }
   }, [error]);
 
   useEffect(() => {
     if (success) {
-      const timer = setTimeout(() => {
-        setSuccess(false);
-      }, 3000);
+      const timer = setTimeout(() => setSuccess(false), 3000);
       return () => clearTimeout(timer);
     }
   }, [success]);
 
   const getMinDate = () => {
     const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+    return today.toISOString().split("T")[0];
   };
 
   return (
@@ -315,74 +277,72 @@ export default function ScheduleReelPage() {
           {error}
         </Alert>
       )}
-
       {success && (
         <Alert variant="success" icon={<CheckCircle className="w-5 h-5" />}>
-          ¡Reel programado exitosamente! Redirigiendo...
+          ¡Reel de Facebook programado exitosamente! Redirigiendo...
         </Alert>
       )}
 
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-          Programar Reel
+        <h1 className="text-2xl sm:text-3xl font-bold ">
+          Programar Reel de Facebook
         </h1>
         <p className="text-muted-foreground">
-          Crea y programa una nueva publicación de Instagram Reel
+          Crea y programa un nuevo Reel para tu página de Facebook
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <h2 className="text-xl font-semibold">Detalles de la Publicación</h2>
+          <h2 className="text-xl font-semibold">Detalles del Reel</h2>
           <p className="text-sm text-muted-foreground">
             Completa la información del reel que deseas programar
           </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Selección de cliente */}
             {clients.length === 0 ? (
               <div className="p-4 border border-border rounded-lg bg-muted/50">
                 <p className="text-sm text-muted-foreground">
-                  No tienes clientes registrados. Por favor, agrega un cliente
-                  primero.
+                  No tienes páginas registradas. Por favor, agrega una primero.
                 </p>
                 <button
                   type="button"
-                  className="text-sm text-purple-600 hover:underline mt-2"
-                  onClick={() => setCurrentPage("clients")}
+                  className="text-sm text-[#1877F2] hover:underline mt-2"
+                  onClick={() => setCurrentPage("facebook-clients")}
                 >
-                  Ir a Mis Clientes
+                  Ir a Mis Páginas
                 </button>
               </div>
             ) : (
               <div className="space-y-2">
                 <Select
                   id="client"
-                  label="Cliente"
+                  label="Página de Facebook"
                   value={clientId}
                   onChange={(e) => handleClientChange(e.target.value)}
                   required
                   error={validationErrors.client}
                   disabled={isLoadingClient}
                 >
-                  <option value="">Selecciona un cliente</option>
+                  <option value="">Selecciona una página</option>
                   {clients.map((client) => (
                     <option key={client.id} value={client.id.toString()}>
-                      {client.name} (@{client.username})
+                      {client.name}
                     </option>
                   ))}
                 </Select>
                 {isLoadingClient && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Cargando datos del cliente...</span>
+                    <span>Cargando datos de la página...</span>
                   </div>
                 )}
                 {selectedClientData && !isLoadingClient && (
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-sm text-green-900">
-                      ✓ Cliente cargado: {selectedClientData.name} (@
-                      {selectedClientData.username})
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-900">
+                      ✓ Página cargada: {selectedClientData.name}
                     </p>
                   </div>
                 )}
@@ -416,19 +376,20 @@ export default function ScheduleReelPage() {
               }}
               required
               rows={5}
-              helperText={`${description.length}/${MAX_DESCRIPTION_LENGTH} caracteres. Incluye hashtags y menciones si es necesario`}
+              helperText={`${description.length}/${MAX_DESCRIPTION_LENGTH} caracteres`}
               error={validationErrors.description}
             />
 
+            {/* 🎥 Input de video estrictamente limitado */}
             <div className="space-y-2">
               <label htmlFor="video" className="text-sm font-medium">
-                Archivo de Video
+                Archivo de Video (solo formatos MP4, MOV, AVI)
               </label>
               <div className="border-2 border-dashed border-border rounded-lg p-8 bg-input-background hover:bg-accent/50 transition-colors">
                 <input
                   type="file"
                   id="video"
-                  accept="video/*"
+                  accept="video/mp4,video/quicktime,video/x-msvideo"
                   onChange={handleFileChange}
                   className="hidden"
                   disabled={isLoading}
@@ -467,16 +428,14 @@ export default function ScheduleReelPage() {
               )}
             </div>
 
+            {/* Fecha y hora */}
             <div className="grid gap-4 md:grid-cols-2">
               <Input
                 type="date"
                 id="date"
                 label="Fecha de Publicación"
                 value={scheduledDate}
-                onChange={(e) => {
-                  setScheduledDate(e.target.value);
-                  setValidationErrors({ ...validationErrors, date: undefined });
-                }}
+                onChange={(e) => setScheduledDate(e.target.value)}
                 required
                 min={getMinDate()}
                 leftIcon={<Calendar className="w-4 h-4" />}
@@ -489,10 +448,7 @@ export default function ScheduleReelPage() {
                 id="time"
                 label="Hora de Publicación"
                 value={scheduledTime}
-                onChange={(e) => {
-                  setScheduledTime(e.target.value);
-                  setValidationErrors({ ...validationErrors, date: undefined });
-                }}
+                onChange={(e) => setScheduledTime(e.target.value)}
                 required
                 leftIcon={<Clock className="w-4 h-4" />}
                 disabled={isLoading}
@@ -508,7 +464,8 @@ export default function ScheduleReelPage() {
               </div>
             )}
 
-            <div className=" gap-3 grid grid-cols-1 md:grid-cols-2">
+            {/* Botones */}
+            <div className="gap-3 grid grid-cols-1 md:grid-cols-2">
               <Button
                 type="button"
                 variant="outline"
@@ -521,7 +478,7 @@ export default function ScheduleReelPage() {
               <button
                 type="submit"
                 disabled={clients.length === 0 || isLoading}
-                className=" px-4 py-2 bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="px-4 py-2 bg-[#1877F2] hover:bg-[#166FE5] text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isLoading ? (
                   <>

@@ -1,17 +1,20 @@
-"use client"
+"use client";
 
-import { BrowserRouter, Routes, Route } from "react-router-dom"
-import { AppProvider } from "./core/context/AppProvider"
-import { LoginPage } from "./modules/auth/pages/LoginPage"
-import { ClientsPage } from "./modules/instagram/clients/pages/ClientsPage"
-import DashboardPage from "./modules/dashboard/pages/DashboardPage"
-import { ProtectedRoute } from "./shared/components/ProtectedRoute"
-import { Sidebar } from "./shared/components/Sidebar"
-import { useApp } from "./shared/hooks/useApp"
-import { MetaCallbackPage } from "./shared/hooks/metaCallBack"
-import ScheduleReelPage from "./modules/instagram/schedule/ScheduleReelPage"
-import PublicationsPage from "./modules/instagram/publications/pages/PublicationsPage"
-import React from "react"
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AppProvider } from "./core/context/AppProvider";
+import { LoginPage } from "./modules/auth/pages/LoginPage";
+import { ClientsPage } from "./modules/instagram/clients/pages/ClientsPage";
+import DashboardPage from "./modules/dashboard/pages/DashboardPage";
+import { ProtectedRoute } from "./shared/components/ProtectedRoute";
+import { Sidebar } from "./shared/components/Sidebar";
+import { useApp } from "./shared/hooks/useApp";
+import { MetaCallbackPage } from "./shared/hooks/metaCallBack";
+import ScheduleReelPage from "./modules/instagram/schedule/ScheduleReelPage";
+import PublicationsPage from "./modules/instagram/publications/pages/PublicationsPage";
+import React from "react";
+import { FacebookClientsPage } from "./modules/facebook/clients/pages/ClientsPage";
+import SchedulePostPage from "./modules/facebook/schedule/SchedulePostPage";
+import PublicationsPageFb from "./modules/facebook/publications/pages/PublicationsPage";
 
 function ComingSoonPage({ network }: { network: string }) {
   return (
@@ -25,92 +28,111 @@ function ComingSoonPage({ network }: { network: string }) {
             viewBox="0 0 24 24"
             strokeWidth="2"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+            />
           </svg>
         </div>
         <h2 className="text-2xl font-semibold text-foreground">Próximamente</h2>
         <p className="text-muted-foreground max-w-md">
-          La gestión de {network} estará disponible pronto. Estamos trabajando para traerte las mejores herramientas.
+          La gestión de {network} estará disponible pronto. Estamos trabajando
+          para traerte las mejores herramientas.
         </p>
       </div>
     </div>
-  )
+  );
 }
 
 function AppContent() {
-  const { isAuthenticated, currentPage, setCurrentPage, logout } = useApp()
+  const { isAuthenticated, currentPage, setCurrentPage, logout } = useApp();
 
   const getActiveNetwork = (page: string): string => {
-    if (page.startsWith("instagram")) return "instagram"
-    if (page.startsWith("facebook")) return "facebook"
-    if (page.startsWith("tiktok")) return "tiktok"
-    if (page.startsWith("whatsapp")) return "whatsapp"
-    if (page.startsWith("x-")) return "x"
-    return "default"
-  }
+    if (page.startsWith("instagram")) return "instagram";
+    if (page.startsWith("facebook")) return "facebook";
+    if (page.startsWith("tiktok")) return "tiktok";
+    if (page.startsWith("whatsapp")) return "whatsapp";
+    if (page.startsWith("x-")) return "x";
+    return "default";
+  };
 
-  const activeNetwork = getActiveNetwork(currentPage)
+  const activeNetwork = getActiveNetwork(currentPage);
 
   React.useEffect(() => {
-    document.documentElement.setAttribute("data-network", activeNetwork)
-  }, [activeNetwork])
+    document.documentElement.setAttribute("data-network", activeNetwork);
+  }, [activeNetwork]);
 
   if (!isAuthenticated) {
-    return <LoginPage />
+    return <LoginPage />;
   }
 
   const renderPage = () => {
     switch (currentPage) {
+      // Dashboard
       case "dashboard":
-        return <DashboardPage />
+        return <DashboardPage />;
 
+      // Instagram pages
       case "clients":
       case "instagram-clients":
-        return <ClientsPage />
+        return <ClientsPage />;
 
       case "schedule":
       case "instagram-schedule":
-        return <ScheduleReelPage />
+        return <ScheduleReelPage />;
 
       case "publications":
       case "instagram-publications":
-        return <PublicationsPage />
+        return <PublicationsPage />;
 
+      // Facebook pages
       case "facebook-clients":
-      case "facebook-publications":
-      case "facebook-schedule":
-        return <ComingSoonPage network="Facebook" />
+        return <FacebookClientsPage />;
 
+      case "facebook-publications":
+        return <PublicationsPageFb />;
+
+      case "facebook-schedule":
+        return <SchedulePostPage />;
+
+      // TikTok pages (coming soon)
       case "tiktok-clients":
       case "tiktok-publications":
       case "tiktok-schedule":
-        return <ComingSoonPage network="TikTok" />
+        return <ComingSoonPage network="TikTok" />;
 
+      // WhatsApp pages (coming soon)
       case "whatsapp-clients":
       case "whatsapp-publications":
       case "whatsapp-schedule":
-        return <ComingSoonPage network="WhatsApp" />
+        return <ComingSoonPage network="WhatsApp" />;
 
+      // X (Twitter) pages (coming soon)
       case "x-clients":
       case "x-publications":
       case "x-schedule":
-        return <ComingSoonPage network="X (Twitter)" />
+        return <ComingSoonPage network="X (Twitter)" />;
 
       default:
-        return <DashboardPage />
+        return <DashboardPage />;
     }
-  }
+  };
 
   return (
     <ProtectedRoute>
       <div className="flex h-screen bg-background">
-        <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} onLogout={logout} />
+        <Sidebar
+          currentPage={currentPage}
+          onNavigate={setCurrentPage}
+          onLogout={logout}
+        />
         <main className="flex-1 overflow-auto">
           <div className="p-8">{renderPage()}</div>
         </main>
       </div>
     </ProtectedRoute>
-  )
+  );
 }
 
 export default function App() {
@@ -123,5 +145,5 @@ export default function App() {
         </Routes>
       </BrowserRouter>
     </AppProvider>
-  )
+  );
 }

@@ -1,7 +1,7 @@
 import type {
   MediaContainerData,
   MediaContainerResponse,
-} from "../../../core/types/meta.Type";
+} from "../../../../core/types/meta.Type";
 
 export class MetaApi {
   private readonly graphApiBase = "https://graph.facebook.com";

@@ -10,8 +10,8 @@ import type {
   UpdateClientDTO,
 } from "../types";
 import { storage } from "../../shared/services/storage/localStorage";
-import { apiClient } from "../../shared/services/api/apiClients";
 import { AppContext } from "./AppContext";
+import { apiClient } from "../../shared/services/api/instagram/apiClients";
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

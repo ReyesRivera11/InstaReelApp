@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { apiClient } from "../../shared/services/api/apiClients";
 import type { CreateClientDTO } from "../../core/types";
+import { apiClient } from "../services/api/instagram/apiClients";
 
 export function MetaCallbackPage() {
   useEffect(() => {

@@ -6,16 +6,15 @@ import type {
   PublicationFilters,
   PaginatedPublications,
 } from "../../../../core/types";
-
 import { AlertCircle, CheckCircle, X, RefreshCw } from "lucide-react";
 import { useApp } from "../../../../shared/hooks/useApp";
 import { Alert, Button } from "../../../../shared/components/ui";
 import { PublicationDetailModal } from "../components/PublicationDetailModal";
 import { appPublications } from "../../../../shared/services/api/instagram/apiPublications";
 
-type ViewMode = "table" | "calendar";
+type ViewMode = "table" | "calendar" | "schedule-post";
 
-const PublicationsPage = () => {
+const PublicationsPageFB = () => {
   const { clients } = useApp();
   const [publications, setPublications] = useState<Publication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -234,40 +233,38 @@ const PublicationsPage = () => {
         <div
           key={day}
           className={`min-h-32 p-2 border border-border bg-card hover:bg-accent/50 transition-colors ${
-            isToday ? "ring-2 ring-purple-500" : ""
+            isToday ? "ring-2 ring-blue-500" : ""
           }`}
         >
           <div
             className={`text-sm mb-2 ${
-              isToday ? "text-purple-600" : "text-muted-foreground"
+              isToday ? "text-blue-600 font-medium" : "text-muted-foreground"
             }`}
           >
             {day}
           </div>
           <div className="space-y-1">
-            {pubs.slice(0, 3).map((pub) => {
-              return (
-                <div
-                  key={pub.id}
-                  onClick={() => handleViewDetails(pub)}
-                  className={`text-xs p-2 rounded-md border-l-2 cursor-pointer hover:scale-105 transition-transform ${
-                    pub.status === "SCHEDULED"
-                      ? "bg-yellow-50 border-yellow-500 hover:bg-yellow-100"
-                      : pub.status === "PUBLISHED"
-                      ? "bg-green-50 border-green-500 hover:bg-green-100"
-                      : ""
-                  }`}
-                >
-                  <p className="line-clamp-1">{pub.title}</p>
-                  <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
-                    {pub.clientName || "Cliente desconocido"}
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    {formatPublicationTime(pub)}
-                  </p>
-                </div>
-              );
-            })}
+            {pubs.slice(0, 3).map((pub) => (
+              <div
+                key={pub.id}
+                onClick={() => handleViewDetails(pub)}
+                className={`text-xs p-2 rounded-md border-l-2 cursor-pointer hover:scale-105 transition-transform ${
+                  pub.status === "SCHEDULED"
+                    ? "bg-yellow-50 border-yellow-500 hover:bg-yellow-100"
+                    : pub.status === "PUBLISHED"
+                    ? "bg-green-50 border-green-500 hover:bg-green-100"
+                    : "bg-gray-50 border-gray-500 hover:bg-gray-100"
+                }`}
+              >
+                <p className="line-clamp-1 font-medium">{pub.title}</p>
+                <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                  {getClientName(pub)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {formatPublicationTime(pub)}
+                </p>
+              </div>
+            ))}
             {pubs.length > 3 && (
               <div className="text-xs text-muted-foreground text-center py-1">
                 +{pubs.length - 3} más
@@ -284,13 +281,13 @@ const PublicationsPage = () => {
           {weekDays.map((day) => (
             <div
               key={day}
-              className="p-2 text-center text-sm text-muted-foreground"
+              className="p-2 text-center text-sm text-muted-foreground font-medium"
             >
               {day}
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-0 border border-border">
+        <div className="grid grid-cols-7 gap-0 border border-border rounded-lg overflow-hidden">
           {days}
         </div>
       </div>
@@ -369,7 +366,7 @@ const PublicationsPage = () => {
               onClick={() => setCurrentPage(page)}
               className={`px-3 py-2 border rounded-lg text-sm transition-colors ${
                 currentPage === page
-                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white border-transparent"
+                  ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white border-transparent"
                   : "border-border hover:bg-accent"
               }`}
             >
@@ -448,7 +445,7 @@ const PublicationsPage = () => {
     const client = clients.find((c) => c.id === publication.client_id);
     return client
       ? `${client.name} (@${client.username})`
-      : "Cliente desconocido";
+      : "Página desconocida";
   };
 
   const getStatusBadge = (status: string) => {
@@ -494,21 +491,21 @@ const PublicationsPage = () => {
       )}
 
       <div className="space-y-6 p-4 sm:p-6 lg:p-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-              Historial de Publicaciones
+            <h1 className="text-2xl sm:text-3xl font-bold ">
+              Publicaciones de Facebook
             </h1>
             <p className="text-muted-foreground mt-1">
-              Visualiza y administra todas tus publicaciones programadas
+              Gestiona tus publicaciones programadas y publicadas
             </p>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <Button
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto "
               variant="gradient"
             >
               <RefreshCw
@@ -572,7 +569,7 @@ const PublicationsPage = () => {
           </div>
         </div>
 
-        <div className="bg-card rounded-lg border border-border p-6">
+        <div className="bg-card rounded-lg border border-border shadow-sm p-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
               <svg
@@ -585,15 +582,15 @@ const PublicationsPage = () => {
                 <path d="m21 21-4.35-4.35" strokeWidth="2" />
               </svg>
               <input
-                placeholder="Buscar por título, descripción o cliente..."
+                placeholder="Buscar por título, descripción o página..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-10 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full pl-10 pr-10 py-2.5 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1877F2] focus:border-[#1877F2] transition-all"
               />
               {searchTerm && (
                 <button
                   onClick={handleClearSearch}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-[#1877F2] transition-colors"
                   aria-label="Limpiar búsqueda"
                 >
                   <X className="w-4 h-4" />
@@ -604,7 +601,7 @@ const PublicationsPage = () => {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-3 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-3 py-2.5 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1877F2] focus:border-[#1877F2] transition-all"
               >
                 <option value="all">Todos los estados</option>
                 <option value="scheduled">Programado</option>
@@ -617,14 +614,14 @@ const PublicationsPage = () => {
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-center space-y-3">
-              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+              <div className="w-12 h-12 border-4 border-blue-200 border-t-[#1877F2] rounded-full animate-spin mx-auto" />
               <p className="text-muted-foreground">Cargando publicaciones...</p>
             </div>
           </div>
         ) : (
           <>
             {viewMode === "table" && (
-              <div className="bg-card rounded-lg border border-border">
+              <div className="bg-card rounded-lg border border-border shadow-sm">
                 <div className="p-6 border-b border-border">
                   <h2 className="text-xl font-semibold">
                     {totalPublications} Publicaciones
@@ -636,14 +633,15 @@ const PublicationsPage = () => {
                 <div className="p-6">
                   {sortedPublications.length === 0 ? (
                     <div className="text-center py-12">
-                      <svg
-                        className="w-12 h-12 text-muted-foreground mx-auto mb-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <polygon points="5 3 19 12 5 21 5 3" strokeWidth="2" />
-                      </svg>
+                      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
+                        <svg
+                          className="w-8 h-8 text-[#1877F2]"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                        </svg>
+                      </div>
                       <p className="text-muted-foreground">
                         {searchTerm || statusFilter !== "all"
                           ? "No se encontraron publicaciones con los filtros aplicados"
@@ -655,19 +653,19 @@ const PublicationsPage = () => {
                       <table className="w-full">
                         <thead>
                           <tr className="border-b border-border">
-                            <th className="text-left p-4 text-sm font-medium">
+                            <th className="text-left p-4 text-sm font-medium text-muted-foreground">
                               Título
                             </th>
-                            <th className="text-left p-4 text-sm font-medium">
-                              Cliente
+                            <th className="text-left p-4 text-sm font-medium text-muted-foreground">
+                              Página
                             </th>
-                            <th className="text-left p-4 text-sm font-medium">
+                            <th className="text-left p-4 text-sm font-medium text-muted-foreground">
                               Fecha Programada
                             </th>
-                            <th className="text-left p-4 text-sm font-medium">
+                            <th className="text-left p-4 text-sm font-medium text-muted-foreground">
                               Estado
                             </th>
-                            <th className="text-right p-4 text-sm font-medium">
+                            <th className="text-right p-4 text-sm font-medium text-muted-foreground">
                               Acciones
                             </th>
                           </tr>
@@ -676,7 +674,7 @@ const PublicationsPage = () => {
                           {sortedPublications.map((pub) => (
                             <tr
                               key={pub.id}
-                              className="border-b border-border hover:bg-accent/50"
+                              className="border-b border-border hover:bg-blue-50/30 transition-all"
                             >
                               <td className="p-4">
                                 <div>
@@ -725,7 +723,7 @@ const PublicationsPage = () => {
             )}
 
             {viewMode === "calendar" && (
-              <div className="bg-card rounded-lg border border-border">
+              <div className="bg-card rounded-lg border border-border shadow-sm">
                 <div className="p-6 border-b border-border">
                   <div className="flex items-center justify-between">
                     <div>
@@ -789,6 +787,45 @@ const PublicationsPage = () => {
                 </div>
               </div>
             )}
+
+            {viewMode === "schedule-post" && (
+              <div className="bg-card rounded-lg border border-border shadow-sm">
+                <div className="p-6 border-b border-border">
+                  <h2 className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+                    Programar Publicación
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Aquí puedes programar nuevas publicaciones
+                  </p>
+                </div>
+                <div className="p-6">
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
+                      <svg
+                        className="w-8 h-8 text-[#1877F2]"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <rect
+                          x="3"
+                          y="3"
+                          width="18"
+                          height="18"
+                          rx="2"
+                          strokeWidth="2"
+                        />
+                        <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
+                        <polyline points="21 15 16 10 5 21" strokeWidth="2" />
+                      </svg>
+                    </div>
+                    <p className="text-muted-foreground">
+                      Funcionalidad de programación aún no implementada
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -803,4 +840,4 @@ const PublicationsPage = () => {
   );
 };
 
-export default PublicationsPage;
+export default PublicationsPageFB;
