@@ -17,4 +17,5 @@ export const {
   META_APP_ID,
   META_APP_SECRET,
   META_REDIRECT_URI,
+  FB_WEBHOOK_VERIFY_TOKEN
 } = process.env;

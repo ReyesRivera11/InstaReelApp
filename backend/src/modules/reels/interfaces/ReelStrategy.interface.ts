@@ -3,6 +3,7 @@ export interface ReelPublishingResult {
   mediaId?: string;
   containerId?: string;
   scheduledTime?: Date;
+  reelUrl?: string;
   error?: string;
 }
 
@@ -11,10 +12,10 @@ export interface ReelPublishingData {
   title: string;
   description?: string;
   scheduledDate: Date;
-  accessToken: string;
+  accessToken: string; 
   socialIdentity: string;
   videoFile: Express.Multer.File;
-  instagramId: string;
+  targetId: string; 
 }
 
 export interface IReelPublishingStrategy {

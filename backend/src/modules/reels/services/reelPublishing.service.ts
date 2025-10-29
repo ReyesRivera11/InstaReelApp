@@ -19,6 +19,8 @@ export const reelPublishingService = async (
     description,
     scheduled_date,
     social_identity,
+    page_access_token,
+    target_id,
   } = reelData;
 
   // Validate client
@@ -30,31 +32,61 @@ export const reelPublishingService = async (
     });
   }
 
+  // Access token and target id based on red social
+  let accessToken: string;
+  let targetId: string;
+
+  // Check red social
+  if (social_identity === "INSTAGRAM") {
+    if (!client.long_lived_token || !client.insta_id) {
+      throw new AppError({
+        httpCode: HttpCode.BAD_REQUEST,
+        description: "Cliente no tiene token de Instagram válido",
+      });
+    }
+    accessToken = client.long_lived_token;
+    targetId = client.insta_id;
+  } else if (social_identity === "FACEBOOK") {
+    if (!page_access_token || !target_id) {
+      throw new AppError({
+        httpCode: HttpCode.BAD_REQUEST,
+        description: "Se requiere page_access_token y target_id para Facebook",
+      });
+    }
+    accessToken = page_access_token;
+    targetId = target_id;
+  } else {
+    throw new AppError({
+      httpCode: HttpCode.BAD_REQUEST,
+      description: "Red social no soportada",
+    });
+  }
+
+  // Create strategy based on red social
   const strategy = ReelStrategyFactory.createStrategy(social_identity);
 
-  // Preparar datos para publicación
+  // Create publishing data
   const publishingData: ReelPublishingData = {
     clientId: client_id,
     title,
     description,
     scheduledDate: new Date(scheduled_date),
-    accessToken: client.long_lived_token,
+    accessToken: accessToken,
     socialIdentity: social_identity,
     videoFile: reelFile,
-    instagramId: client.insta_id, // Usamos el insta_id para ambas redes
+    targetId: targetId,
   };
 
   let containerId: string;
-  let reelId: number;
+  let reelId: number | undefined = undefined;
 
   try {
-    // 1. Crear contenedor en la red social
+    // Create container and schedule publishing
     containerId = await strategy.createContainer(publishingData);
 
-    // 2. Crear registro en BD con el containerId generado
     const result = await ReelsModel.create(
       client_id,
-      containerId, // Ahora usamos el containerId generado por el backend
+      containerId,
       title,
       social_identity,
       scheduled_date,
@@ -63,35 +95,24 @@ export const reelPublishingService = async (
 
     reelId = result.id;
 
-    // 3. Programar publicación usando la estrategia
     const publishingResult = await strategy.schedulePublishing(
       containerId,
-      publishingData
+      publishingData,
+      reelId
     );
 
     if (!publishingResult.success) {
-      // Revertir creación en BD si falla
       throw new AppError({
         httpCode: HttpCode.INTERNAL_SERVER_ERROR,
         description:
           publishingResult.error || "Error al programar la publicación",
       });
     }
-    return {
-
-      reelId,
-      containerId,
-      scheduledTime: publishingResult.scheduledTime,
-    };
   } catch (error) {
-    if (error instanceof AppError) throw error;
+    if (reelId) {
+      await ReelsModel.deleteReel(reelId);
+    }
 
-    throw new AppError({
-      httpCode: HttpCode.INTERNAL_SERVER_ERROR,
-      description:
-        error instanceof Error
-          ? error.message
-          : "Error desconocido al programar el reel",
-    });
+    if (error instanceof AppError) throw error;
   }
 };

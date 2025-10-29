@@ -6,12 +6,22 @@ import { HttpCode } from "../../../shared/enums/HttpCode";
 import { GetReelsFilters } from "../interfaces/GetReelsFilters.interface";
 
 export class ReelsModel {
-  static async getReelByMediaId(media_id: string) {
-    const reel = await prisma.reels.findUnique({
-      where: { container_media_id: media_id },
-    });
+  static async findReelByContainerId(containerMediaId: string) {
+    try {
+      const reel = await prisma.reels.findFirst({
+        where: {
+          OR: [
+            { container_media_id: containerMediaId },
+            { container_media_id: { contains: containerMediaId } },
+          ],
+        },
+      });
 
-    return reel;
+      return reel;
+    } catch (error) {
+      console.error("Error finding reel by container ID:", error);
+      return null;
+    }
   }
 
   static async getPaginatedReels(filters: GetReelsFilters) {
@@ -133,6 +143,7 @@ export class ReelsModel {
 
       return newPublication;
     } catch (error) {
+      console.log({ error });
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         throw new AppError({
           httpCode: HttpCode.CONFLICT,
@@ -144,27 +155,42 @@ export class ReelsModel {
     }
   }
 
-  static async updateVideoUrlAndStatus(
-    publication_id: number,
-    video_url: string
+  static async updateReelAfterPublishing(
+    reelId: number,
+    reelUrl: string,
+    mediaId?: string
   ) {
     try {
-      await prisma.reels.update({
-        where: { id: publication_id },
+      const updatedReel = await prisma.reels.update({
+        where: { id: reelId },
         data: {
-          video_url,
           status: "PUBLISHED",
+          video_url: reelUrl,
+          ...(mediaId && { container_media_id: mediaId }),
         },
+      });
+
+      return updatedReel;
+    } catch (error) {
+      console.error("Error updating reel after publishing:", error);
+      throw error;
+    }
+  }
+
+  static async deleteReel(reelId: number) {
+    try {
+      await prisma.reels.delete({
+        where: { id: reelId },
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        throw new AppError({
-          httpCode: HttpCode.CONFLICT,
-          description: "Error al actualizar el estado de la publicación",
-        });
+        if (error.code === "P2025") {
+          throw new AppError({
+            httpCode: HttpCode.CONFLICT,
+            description: `No se encontró un reel con el ID ${reelId} para eliminar`,
+          })
+        }
       }
-
-      throw error;
     }
   }
 }

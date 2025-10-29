@@ -5,5 +5,7 @@ export interface ScheduleReel {
   title: string;
   scheduled_date: Date;
   social_identity: SocialIdentity;
+  page_access_token?: string;
+  target_id?: string;
   description?: string;
 }
