@@ -7,6 +7,8 @@ import type {
   InitiateOAuthResponse,
   User,
   UpdateClientDTO,
+  PaginatedClients,
+  ClientFilters,
 } from "../../../../core/types";
 import type { AxiosError } from "axios";
 import { axiosInstance } from "../apiBase";
@@ -189,8 +191,34 @@ class ApiClient {
     return this.get<{ client: ClientDB }>(`/client/${id}`);
   }
 
-  async getClients(): Promise<ApiResponse<ClientDB[]>> {
-    return this.get<ClientDB[]>("/client/list");
+async getClients(filters?: ClientFilters): Promise<PaginatedClients> {
+    const params: Record<string, unknown> = {}
+
+    if (filters?.page) params.page = filters.page
+    if (filters?.limit) params.limit = filters.limit
+    if (filters?.search) params.search = filters.search
+    if (filters?.social_identity) params.social_identity = filters.social_identity
+
+    const response = await apiClient.get<PaginatedClients>("/client/list", params)
+
+    if (response.success && response.data) {
+      return response.data
+    }
+
+    // Fallback for old API format without pagination
+    if (response.clients) {
+      return {
+        clients: response.clients,
+        total: response.clients.length,
+        page: 1,
+        limit: response.clients.length,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
+      }
+    }
+
+    throw new Error(response.error || "Error al cargar clientes")
   }
 
   async deleteClient(id: number): Promise<ApiResponse<void>> {

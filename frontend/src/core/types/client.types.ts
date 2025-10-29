@@ -61,3 +61,19 @@ export interface GetMeResponse {
     lastName: string;
   };
 }
+export interface PaginatedClients {
+  clients: ClientDB[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+export interface ClientFilters {
+  page?: number;
+  limit?: number;
+  search?: string;
+  social_identity?: string;
+}
