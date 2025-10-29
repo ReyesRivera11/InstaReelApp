@@ -22,3 +22,10 @@ export const updateClientSchema = createClientSchema
     name: z.string().min(3).optional(),
     username: z.string().min(3).optional(),
   });
+
+export const ClientFiltersSchema = z.object({
+  search: z.string().optional(),
+  social_identity: z.enum(['INSTAGRAM', 'FACEBOOK']).optional(),
+  page: z.string().transform(Number).pipe(z.number().int().positive()).optional().default(1),
+  limit: z.string().transform(Number).pipe(z.number().int().positive().max(50)).optional().default(10)
+});

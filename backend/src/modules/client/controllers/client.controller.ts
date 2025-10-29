@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 
 import { validateSchema } from "../../../shared/utils/zodValidation";
 import {
+  ClientFiltersSchema,
   clientIdSchema,
   createClientSchema,
   updateClientSchema,
@@ -26,10 +27,11 @@ export class ClientController {
     res.json({ client });
   }
 
-  static async getAllClients(_req: Request, res: Response) {
-    const clients = await getAllClientsService();
+  static async getAllClients(req: Request, res: Response) {
+    const filters = await validateSchema(ClientFiltersSchema, req.query);
+    const result = await getAllClientsService(filters);
 
-    res.json({ clients });
+    res.json(result);
   }
 
   static async createClient(req: Request, res: Response) {
@@ -58,7 +60,7 @@ export class ClientController {
     const { id } = await validateSchema(clientIdSchema, req.params);
 
     await deleteClientService(id);
-    
+
     res.sendStatus(HttpCode.OK);
   }
 }

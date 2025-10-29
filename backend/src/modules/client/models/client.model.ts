@@ -5,6 +5,10 @@ import { AppError } from "../../../core/errors/AppError";
 import { HttpCode } from "../../../shared/enums/HttpCode";
 import { ClientData } from "../interfaces/clientData.interface";
 import { IUpdateClient } from "../interfaces/UpdateClient.interface";
+import {
+  ClientFilters,
+  PaginatedClients,
+} from "../interfaces/ClientFilters.interface";
 
 export class ClientModel {
   static async getClientById(id: number) {
@@ -28,10 +32,72 @@ export class ClientModel {
     return clients;
   }
 
+  static async getPaginatedClients(
+    filters: ClientFilters
+  ): Promise<PaginatedClients> {
+    const { search = "", social_identity, page = 1, limit = 10 } = filters;
+
+    const skip = (page - 1) * limit;
+
+    // Build where
+    const where: any = {};
+
+    // Filter by search
+    if (search) {
+      where.OR = [
+        { name: { contains: search } },
+        { username: { contains: search } },
+        { description: { contains: search } },
+      ];
+    }
+
+    // Filter by social identity
+    if (social_identity) {
+      where.social_identity = social_identity;
+    }
+
+    // Get clients
+    const [clients, total] = await Promise.all([
+      prisma.client.findMany({
+        where,
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          description: true,
+          social_identity: true,
+          insta_id: true,
+        },
+      }),
+      prisma.client.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
+    return {
+      clients,
+      total,
+      page,
+      totalPages,
+      hasNext,
+      hasPrev,
+    };
+  }
+
   static async createAccount(accountData: ClientData) {
     try {
-      const { name, username, description, long_lived_token, insta_id, social_identity } =
-        accountData;
+      const {
+        name,
+        username,
+        description,
+        long_lived_token,
+        insta_id,
+        social_identity,
+      } = accountData;
 
       await prisma.client.create({
         data: {
@@ -40,7 +106,7 @@ export class ClientModel {
           description,
           long_lived_token,
           insta_id,
-          social_identity
+          social_identity,
         },
       });
     } catch (error) {
