@@ -3,7 +3,7 @@ import { AppError } from "../../../core/errors/AppError";
 import { HttpCode } from "../../../shared/enums/HttpCode";
 import { META_API_URLS } from "../../meta/constants/meta.constants";
 import { MediaStatusResponse } from "../interfaces/MediaStatus.response";
-import { PublicationModel } from "../models/publication.model";
+import { ReelsModel } from "../models/reels.model";
 
 export const saveVideoUrlAndStatusService = async (
   ig_media_id: string,
@@ -17,7 +17,7 @@ export const saveVideoUrlAndStatusService = async (
 
     const { permalink } = data;
 
-    await PublicationModel.updateVideoUrlAndStatus(publication_id, permalink);
+    await ReelsModel.updateVideoUrlAndStatus(publication_id, permalink);
   } catch (error) {
     if (error instanceof axios.AxiosError && error.response?.status === 400) {
       throw new AppError({

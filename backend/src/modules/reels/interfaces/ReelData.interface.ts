@@ -1,7 +1,9 @@
+import { SocialIdentity } from "@prisma/client";
+
 export interface ScheduleReel {
   client_id: number;
-  container_media_id: string;
   title: string;
   scheduled_date: Date;
+  social_identity: SocialIdentity;
   description?: string;
 }

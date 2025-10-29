@@ -1,22 +1,27 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, SocialIdentity } from "@prisma/client";
 import prisma from "../../../shared/lib/prisma";
 
 import { AppError } from "../../../core/errors/AppError";
 import { HttpCode } from "../../../shared/enums/HttpCode";
+import { GetReelsFilters } from "../interfaces/GetReelsFilters.interface";
 
-import { PublicationFilters } from "../interfaces/PublicationFilters.interface";
-
-export class PublicationModel {
-  static async getPublicationByMediaId(media_id: string) {
-    const publication = await prisma.instagram_reels.findUnique({
+export class ReelsModel {
+  static async getReelByMediaId(media_id: string) {
+    const reel = await prisma.reels.findUnique({
       where: { container_media_id: media_id },
     });
 
-    return publication;
+    return reel;
   }
 
-  static async getPaginatedPublications(filters: PublicationFilters) {
-    const { search = "", status, page = 1, limit = 10 } = filters;
+  static async getPaginatedReels(filters: GetReelsFilters) {
+    const {
+      search = "",
+      status,
+      page = 1,
+      limit = 10,
+      social_identity,
+    } = filters;
 
     const skip = (page - 1) * limit;
 
@@ -37,9 +42,14 @@ export class PublicationModel {
       where.status = status.toUpperCase();
     }
 
-    // Get publications
-    const [publications, total] = await Promise.all([
-      prisma.instagram_reels.findMany({
+    // Filter by social identity
+    if (social_identity) {
+      where.social_identity = social_identity;
+    }
+
+    // Get reels
+    const [reels, total] = await Promise.all([
+      prisma.reels.findMany({
         where,
         skip,
         take: limit,
@@ -53,28 +63,28 @@ export class PublicationModel {
           },
         },
       }),
-      prisma.instagram_reels.count({ where }),
+      prisma.reels.count({ where }),
     ]);
 
     const totalPages = Math.ceil(total / limit);
     const hasNext = page < totalPages;
     const hasPrev = page > 1;
 
-    // Format publications
-    const formattedPublications = publications.map((pub) => ({
-      id: pub.id,
-      title: pub.title,
-      description: pub.description,
-      clientName: pub.client.name,
-      scheduled_date: pub.scheduled_date,
-      status: pub.status as "scheduled" | "published",
-      media_url: pub.video_url,
-      published_at: pub.scheduled_date,
-      created_at: pub.created_at,
+    // Format reels
+    const formattedReels = reels.map((reel) => ({
+      id: reel.id,
+      title: reel.title,
+      description: reel.description,
+      clientName: reel.client.name,
+      scheduled_date: reel.scheduled_date,
+      status: reel.status as "scheduled" | "published",
+      media_url: reel.video_url,
+      published_at: reel.scheduled_date,
+      created_at: reel.created_at,
     }));
 
     return {
-      publications: formattedPublications,
+      reels: formattedReels,
       total,
       page,
       totalPages,
@@ -83,35 +93,37 @@ export class PublicationModel {
     };
   }
 
-  static async getPublicationById(id: number) {
-    const publication = await prisma.instagram_reels.findUnique({
+  static async getReelById(id: number) {
+    const reel = await prisma.reels.findUnique({
       where: { id },
       include: {
         client: {
           select: {
-            username: true
+            username: true,
           },
         },
       },
       omit: {
-        client_id: true
-      }
+        client_id: true,
+      },
     });
 
-    return publication;
+    return reel;
   }
 
   static async create(
     client_id: number,
     container_media_id: string,
     title: string,
+    social_identity: SocialIdentity,
     scheduled_date: Date,
     description?: string
   ) {
     try {
-      const newPublication = await prisma.instagram_reels.create({
+      const newPublication = await prisma.reels.create({
         data: {
           client_id,
+          social_identity,
           container_media_id,
           title,
           description,
@@ -137,7 +149,7 @@ export class PublicationModel {
     video_url: string
   ) {
     try {
-      await prisma.instagram_reels.update({
+      await prisma.reels.update({
         where: { id: publication_id },
         data: {
           video_url,

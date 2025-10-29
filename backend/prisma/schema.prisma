@@ -25,28 +25,29 @@ model refresh_tokens {
 }
 
 model client {
-  id               Int     @id @default(autoincrement())
+  id               Int            @id @default(autoincrement())
   name             String
-  username         String  @unique
-  social_identity  SocialIdentity 
+  username         String         @unique
+  social_identity  SocialIdentity
   description      String?
   insta_id         String?
-  long_lived_token String? @db.VarChar(250)
+  long_lived_token String?        @db.VarChar(250)
 
-  instagram_reels instagram_reels[]
+  reels reels[]
 }
 
-model instagram_reels {
-  id                 Int        @id @default(autoincrement())
+model reels {
+  id                 Int            @id @default(autoincrement())
   client_id          Int
-  client             client     @relation(fields: [client_id], references: [id])
-  status             ReelStatus @default(SCHEDULED)
+  client             client         @relation(fields: [client_id], references: [id])
+  status             ReelStatus     @default(SCHEDULED)
   title              String
+  social_identity    SocialIdentity
   description        String?
   video_url          String?
   scheduled_date     DateTime?
-  container_media_id String?    @unique
-  created_at         DateTime?  @default(now())
+  container_media_id String?        @unique
+  created_at         DateTime?      @default(now())
 }
 
 enum SocialIdentity {

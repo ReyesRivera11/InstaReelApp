@@ -30,7 +30,7 @@ export class ClientModel {
 
   static async createAccount(accountData: ClientData) {
     try {
-      const { name, username, description, long_lived_token, insta_id } =
+      const { name, username, description, long_lived_token, insta_id, social_identity } =
         accountData;
 
       await prisma.client.create({
@@ -40,6 +40,7 @@ export class ClientModel {
           description,
           long_lived_token,
           insta_id,
+          social_identity
         },
       });
     } catch (error) {
