@@ -20,7 +20,7 @@ export const reelPublishingService = async (
     scheduled_date,
     social_identity,
     page_access_token,
-    target_id,
+    page_id,
   } = reelData;
 
   // Validate client
@@ -47,14 +47,14 @@ export const reelPublishingService = async (
     accessToken = client.long_lived_token;
     targetId = client.insta_id;
   } else if (social_identity === "FACEBOOK") {
-    if (!page_access_token || !target_id) {
+    if (!page_access_token || !page_id) {
       throw new AppError({
         httpCode: HttpCode.BAD_REQUEST,
-        description: "Se requiere page_access_token y target_id para Facebook",
+        description: "Se requiere page_access_token y page_id para Facebook",
       });
     }
     accessToken = page_access_token;
-    targetId = target_id;
+    targetId = page_id;
   } else {
     throw new AppError({
       httpCode: HttpCode.BAD_REQUEST,
