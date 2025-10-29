@@ -6,7 +6,7 @@ import { AlertCircle, CheckCircle } from "lucide-react";
 import { Alert, Button, Card, Input } from "../../../shared/components/ui";
 import { useApp } from "../../../shared/hooks/useApp";
 import { storage } from "../../../shared/services/storage/localStorage";
-import { apiClient } from "../../../shared/services/api/instagram/apiClients";
+import { apiClient } from "../../../shared/services/api/reels/apiClients";
 
 export function LoginPage() {
   const [email, setEmail] = useState("");

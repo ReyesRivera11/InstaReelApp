@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Publication } from "../../../../core/types";
-import { appPublications } from "../../../../shared/services/api/instagram/apiPublications";
+import type { Reels } from "../../../../core/types";
+import { appReelss } from "../../../../shared/services/api/reels/apiPublications";
 
 interface PublicationDetailModalProps {
   publicationId: number | null;
@@ -16,7 +16,7 @@ export function PublicationDetailModal({
   isOpen,
   onClose,
 }: PublicationDetailModalProps) {
-  const [publication, setPublication] = useState<Publication | null>(null);
+  const [publication, setPublication] = useState<Reels | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,12 +31,10 @@ export function PublicationDetailModal({
         setIsLoading(true);
         setError(null);
 
-        const response = await appPublications.getPublicationById(
-          publicationId.toString()
-        );
+        const response = await appReelss.getReelsById(publicationId.toString());
         console.log(response);
-        if (response.publication) {
-          setPublication(response.publication);
+        if (response.reel) {
+          setPublication(response.reel);
         } else {
           setError(response.error || "Error al cargar la publicación");
         }
@@ -107,11 +105,11 @@ export function PublicationDetailModal({
 
   if (!publication) return null;
 
-  const getScheduledDate = (pub: Publication): string | undefined => {
+  const getScheduledDate = (pub: Reels): string | undefined => {
     return pub.scheduled_date ?? pub.scheduledDate ?? undefined;
   };
 
-  const getVideoUrl = (pub: Publication): string | undefined => {
+  const getVideoUrl = (pub: Reels): string | undefined => {
     return pub.media_url ?? pub.video_url ?? undefined;
   };
 

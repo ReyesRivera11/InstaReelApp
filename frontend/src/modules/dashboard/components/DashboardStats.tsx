@@ -44,7 +44,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
             <polyline points="12 6 12 12 16 14" strokeWidth="2" />
           </svg>
         </div>
-        <div className="text-2xl font-bold">{stats.scheduledPublications}</div>
+        <div className="text-2xl font-bold">{stats.scheduledReels}</div>
         <p className="text-xs text-muted-foreground mt-1">
           Pendientes de publicar
         </p>
@@ -63,7 +63,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
             <polyline points="22 4 12 14.01 9 11.01" strokeWidth="2" />
           </svg>
         </div>
-        <div className="text-2xl font-bold">{stats.completedPublications}</div>
+        <div className="text-2xl font-bold">{stats.completedReels}</div>
         <p className="text-xs text-muted-foreground mt-1">Total completadas</p>
       </div>
 
@@ -90,7 +90,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
             <line x1="3" y1="10" x2="21" y2="10" strokeWidth="2" />
           </svg>
         </div>
-        <div className="text-2xl font-bold">{stats.todayPublications}</div>
+        <div className="text-2xl font-bold">{stats.todayReels}</div>
         <p className="text-xs text-muted-foreground mt-1">
           Publicaciones de hoy
         </p>

@@ -1,9 +1,9 @@
 export interface DashboardData {
   stats: Stats;
-  recentPublications: RecentPublication[];
+  recentReels: RecentReels[];
 }
 
-export interface RecentPublication {
+export interface RecentReels {
   id: number;
   clientName: string;
   scheduledFor: Date;
@@ -16,7 +16,7 @@ export interface RecentPublication {
 
 export interface Stats {
   activeClients: number;
-  scheduledPublications: number;
-  completedPublications: number;
-  todayPublications: number;
+  scheduledReels: number;
+  completedReels: number;
+  todayReels: number;
 }

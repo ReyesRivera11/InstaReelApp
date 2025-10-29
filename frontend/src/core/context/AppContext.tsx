@@ -2,7 +2,7 @@ import { createContext } from "react";
 import type {
   User,
   ClientDB,
-  Publication,
+  Reels,
   Page,
   CreateClientDTO,
   UpdateClientDTO,
@@ -23,8 +23,8 @@ export interface AppContextType {
 
   updateClient: (id: number, data: UpdateClientDTO) => Promise<void>;
 
-  publications: Publication[];
-  addPublication: (publication: Omit<Publication, "id" | "status">) => void;
+  publications: Reels[];
+  addPublication: (publication: Omit<Reels, "id" | "status">) => void;
   deletePublication: (id: number) => void;
   oauthCompleted: boolean;
   setOauthCompleted: (value: boolean) => void;

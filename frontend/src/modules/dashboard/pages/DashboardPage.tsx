@@ -10,13 +10,11 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   useEffect(() => {
     async function fetchDashboard() {
       setLoading(true);
 
       const response = await apiDashboard.getDashboard();
-
       if (response.success && response.data) {
         setData(response.data);
       } else {
@@ -24,11 +22,11 @@ export default function DashboardPage() {
         setData({
           stats: {
             activeClients: 0,
-            scheduledPublications: 0,
-            completedPublications: 0,
-            todayPublications: 0,
+            scheduledReels: 0,
+            completedReels: 0,
+            todayReels: 0,
           },
-          recentPublications: [],
+          recentReels: [],
         });
       }
 
@@ -70,7 +68,7 @@ export default function DashboardPage() {
 
       <DashboardStats stats={data.stats} />
 
-      <RecentPublications publications={data.recentPublications} />
+      <RecentPublications publications={data.recentReels} />
     </div>
   );
 }

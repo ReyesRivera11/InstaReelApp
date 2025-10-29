@@ -5,6 +5,7 @@ export interface CreateClientDTO {
   access_token?: string;
   expires_in?: string;
   long_lived_token?: string;
+  social_identity?: "FACEBOOK" | "INSTAGRAM";
 }
 export interface InitiateOAuthRequest {
   name: string;
@@ -38,8 +39,8 @@ export interface ClientDB {
   insta_id?: string;
   access_token?: string;
   long_lived_token?: string;
+  social_identity: "FACEBOOK" | "INSTAGRAM";
 }
-
 export interface User {
   id?: number;
   firstName?: string;

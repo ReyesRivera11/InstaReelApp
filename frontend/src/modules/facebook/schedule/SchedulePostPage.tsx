@@ -1,5 +1,4 @@
 "use client";
-
 import type React from "react";
 import { useState, useEffect } from "react";
 import {
@@ -22,16 +21,24 @@ import {
   Upload,
 } from "lucide-react";
 import type { ClientDB } from "../../../core/types";
-import { apiClient } from "../../../shared/services/api/instagram/apiClients";
-import { metaApi } from "../../../shared/services/api/instagram/apiMeta";
-import { appPublications } from "../../../shared/services/api/instagram/apiPublications";
+import { apiClient } from "../../../shared/services/api/reels/apiClients";
+import { appReelss } from "../../../shared/services/api/reels/apiPublications";
 
-const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
 const MIN_TITLE_LENGTH = 3;
 const MAX_TITLE_LENGTH = 100;
 const MIN_DESCRIPTION_LENGTH = 1;
 const MAX_DESCRIPTION_LENGTH = 2200;
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/x-msvideo"];
+
+interface FacebookPage {
+  access_token: string;
+  name: string;
+  id: string;
+  category?: string;
+  category_list?: Array<{ id: string; name: string }>;
+  tasks?: string[];
+}
 
 export default function ScheduleFacebookReelPage() {
   const { clients, setCurrentPage } = useApp();
@@ -39,6 +46,12 @@ export default function ScheduleFacebookReelPage() {
   const [selectedClientData, setSelectedClientData] = useState<ClientDB | null>(
     null
   );
+
+  const [facebookPages, setFacebookPages] = useState<FacebookPage[]>([]);
+  const [selectedPageId, setSelectedPageId] = useState("");
+  const [selectedPage, setSelectedPage] = useState<FacebookPage | null>(null);
+  const [isLoadingPages, setIsLoadingPages] = useState(false);
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -57,11 +70,50 @@ export default function ScheduleFacebookReelPage() {
     video?: string;
     date?: string;
     client?: string;
+    page?: string;
   }>({});
+
+  const fetchFacebookPages = async (accessToken: string) => {
+    setIsLoadingPages(true);
+    setFacebookPages([]);
+    setSelectedPageId("");
+    setSelectedPage(null);
+
+    try {
+      const response = await fetch(
+        `https://graph.facebook.com/v24.0/me/accounts?access_token=${accessToken}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Error al obtener las páginas de Facebook");
+      }
+
+      const data = await response.json();
+
+      if (data.data && Array.isArray(data.data)) {
+        setFacebookPages(data.data);
+      } else {
+        throw new Error("No se encontraron páginas");
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Error al cargar las páginas de Facebook"
+      );
+      setFacebookPages([]);
+    } finally {
+      setIsLoadingPages(false);
+    }
+  };
 
   const handleClientChange = async (newClientId: string) => {
     setClientId(newClientId);
     setValidationErrors({ ...validationErrors, client: undefined });
+
+    setFacebookPages([]);
+    setSelectedPageId("");
+    setSelectedPage(null);
 
     if (!newClientId) {
       setSelectedClientData(null);
@@ -75,6 +127,8 @@ export default function ScheduleFacebookReelPage() {
       );
       if (response.client) {
         setSelectedClientData(response.client);
+        if (response.client.long_lived_token)
+          await fetchFacebookPages(response.client.long_lived_token);
       } else {
         setError(response.error || "Error al obtener datos del cliente");
         setSelectedClientData(null);
@@ -87,11 +141,44 @@ export default function ScheduleFacebookReelPage() {
     }
   };
 
-  // 🧩 Validaciones
+  const handlePageChange = (pageId: string) => {
+    setSelectedPageId(pageId);
+    setValidationErrors({ ...validationErrors, page: undefined });
+
+    if (!pageId) {
+      setSelectedPage(null);
+      return;
+    }
+
+    const page = facebookPages.find((p) => p.id === pageId);
+    if (page) {
+      setSelectedPage(page);
+    }
+  };
+
+  const getMinDateTime = () => {
+    const now = new Date();
+    const minTime = new Date(now.getTime() + 10 * 60 * 1000);
+
+    const year = minTime.getFullYear();
+    const month = String(minTime.getMonth() + 1).padStart(2, "0");
+    const day = String(minTime.getDate()).padStart(2, "0");
+    const hours = String(minTime.getHours()).padStart(2, "0");
+    const minutes = String(minTime.getMinutes()).padStart(2, "0");
+
+    return {
+      date: `${year}-${month}-${day}`,
+      time: `${hours}:${minutes}`,
+    };
+  };
+
   const validateForm = (): boolean => {
     const errors: typeof validationErrors = {};
 
     if (!clientId) errors.client = "Debes seleccionar una página de Facebook";
+
+    if (!selectedPageId)
+      errors.page = "Debes seleccionar una página de Facebook";
 
     if (title.length < MIN_TITLE_LENGTH)
       errors.title = `El título debe tener al menos ${MIN_TITLE_LENGTH} caracteres`;
@@ -115,8 +202,12 @@ export default function ScheduleFacebookReelPage() {
       errors.date = "Debes seleccionar fecha y hora de publicación";
     } else {
       const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
-      if (scheduledDateTime <= new Date()) {
-        errors.date = "La fecha de publicación debe ser futura";
+      const now = new Date();
+      const minScheduleTime = new Date(now.getTime() + 10 * 60 * 1000);
+
+      if (scheduledDateTime <= minScheduleTime) {
+        errors.date =
+          "La fecha de publicación debe ser al menos 10 minutos en el futuro";
       }
     }
 
@@ -126,21 +217,36 @@ export default function ScheduleFacebookReelPage() {
 
   function toLocalISO(date: string, time: string) {
     const [hours, minutes] = time.split(":").map(Number);
-    const localDate = new Date(date);
-    localDate.setHours(hours, minutes, 0, 0);
+
+    const localDate = new Date();
+    localDate.setFullYear(Number(date.split("-")[0]));
+    localDate.setMonth(Number(date.split("-")[1]) - 1);
+    localDate.setDate(Number(date.split("-")[2]));
+    localDate.setHours(hours);
+    localDate.setMinutes(minutes);
+    localDate.setSeconds(0);
+    localDate.setMilliseconds(0);
+
     const tzOffset = -localDate.getTimezoneOffset();
     const sign = tzOffset >= 0 ? "+" : "-";
-    const offsetHours = String(Math.floor(Math.abs(tzOffset) / 60)).padStart(
+    const diffHours = String(Math.floor(Math.abs(tzOffset) / 60)).padStart(
       2,
       "0"
     );
-    const offsetMinutes = String(Math.abs(tzOffset) % 60).padStart(2, "0");
-    return `${localDate
-      .toISOString()
-      .slice(0, 19)}${sign}${offsetHours}:${offsetMinutes}`;
-  }
+    const diffMinutes = String(Math.abs(tzOffset) % 60).padStart(2, "0");
+    const offset = `${sign}${diffHours}:${diffMinutes}`;
 
-  // 🚀 Enviar formulario
+    const isoLocal = `${localDate.getFullYear()}-${String(
+      localDate.getMonth() + 1
+    ).padStart(2, "0")}-${String(localDate.getDate()).padStart(
+      2,
+      "0"
+    )}T${String(localDate.getHours()).padStart(2, "0")}:${String(
+      localDate.getMinutes()
+    ).padStart(2, "0")}:00${offset}`;
+
+    return isoLocal;
+  }
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) {
@@ -153,47 +259,35 @@ export default function ScheduleFacebookReelPage() {
       return;
     }
 
-    if (!selectedClientData) {
+    if (!selectedPage) {
       setError("No se pudieron cargar los datos de la página");
       return;
     }
 
     setIsLoading(true);
     setError(null);
-    setUploadProgress("Creando contenedor de media en Facebook...");
 
     try {
-      const containerResponse = await metaApi.createMediaContainer(
-        selectedClientData.insta_id,
-        {
-          media_type: "REELS",
-          caption: description,
-          access_token: selectedClientData.long_lived_token,
-          upload_type: "resumable",
-        }
-      );
+      setUploadProgress("Creando contenedor de video en Facebook...");
 
-      if (!containerResponse.id)
-        throw new Error("No se pudo crear el contenedor de media");
-
-      const containerMediaId = containerResponse.id;
-      setUploadProgress("Enviando datos al servidor...");
+      setUploadProgress("Enviando video al backend para procesamiento...");
+      const scheduledDateTime = toLocalISO(scheduledDate, scheduledTime);
 
       const formData = new FormData();
       formData.append("client_id", clientId);
       formData.append("title", title);
       formData.append("description", description);
-      formData.append(
-        "scheduled_date",
-        toLocalISO(scheduledDate, scheduledTime)
-      );
-      formData.append("container_media_id", containerMediaId);
+      formData.append("scheduled_date", scheduledDateTime);
       formData.append("reel", videoFile);
+      formData.append("social_identity", "FACEBOOK");
+      formData.append("page_access_token", selectedPage.access_token);
+      formData.append("page_id", selectedPage.id);
 
-      setUploadProgress("Procesando reel en el servidor...");
-
-      const response = await appPublications.scheduleReel(formData);
-      if (!response) throw new Error("Error al programar el reel");
+      const response = await appReelss.scheduleReel(formData);
+      console.log(response);
+      if (response.success === false) {
+        throw new Error("Error al programar el reel");
+      }
 
       setSuccess(true);
       setClientId("");
@@ -203,11 +297,15 @@ export default function ScheduleFacebookReelPage() {
       setScheduledDate("");
       setScheduledTime("");
       setSelectedClientData(null);
+      setFacebookPages([]);
+      setSelectedPageId("");
+      setSelectedPage(null);
       setValidationErrors({});
       setUploadProgress("");
 
       setTimeout(() => setCurrentPage("facebook-publications"), 2000);
     } catch (err) {
+      console.error("[v0] Error en handleSubmit:", err);
       setError(
         err instanceof Error
           ? err.message
@@ -219,7 +317,6 @@ export default function ScheduleFacebookReelPage() {
     }
   };
 
-  // 🎥 Manejo del archivo de video (solo videos)
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -251,6 +348,56 @@ export default function ScheduleFacebookReelPage() {
     setVideoFile(file);
   };
 
+  const handleTimeChange = (newTime: string) => {
+    if (!scheduledDate) {
+      setScheduledTime(newTime);
+      return;
+    }
+
+    const today = getMinDate();
+    const minTime = getMinDateTime().time;
+
+    if (scheduledDate === today && newTime < minTime) {
+      setScheduledTime(minTime);
+    } else {
+      setScheduledTime(newTime);
+    }
+  };
+
+  const getMinDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const getMinTime = () => {
+    if (!scheduledDate) return undefined;
+    const today = getMinDate();
+    return scheduledDate === today ? getMinDateTime().time : "00:00";
+  };
+
+  const handleTimeFocus = () => {
+    if (!scheduledDate) return;
+    const today = getMinDate();
+    if (scheduledDate === today) {
+      const { time } = getMinDateTime();
+      if (!scheduledTime || scheduledTime < time) setScheduledTime(time);
+    }
+  };
+
+  useEffect(() => {
+    if (scheduledDate) {
+      const today = getMinDate();
+      if (scheduledDate === today && !scheduledTime) {
+        const { time } = getMinDateTime();
+        setScheduledTime(time);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scheduledDate]);
+
   useEffect(() => {
     if (error) {
       const timer = setTimeout(() => setError(null), 3000);
@@ -264,11 +411,6 @@ export default function ScheduleFacebookReelPage() {
       return () => clearTimeout(timer);
     }
   }, [success]);
-
-  const getMinDate = () => {
-    const today = new Date();
-    return today.toISOString().split("T")[0];
-  };
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -301,7 +443,6 @@ export default function ScheduleFacebookReelPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Selección de cliente */}
             {clients.length === 0 ? (
               <div className="p-4 border border-border rounded-lg bg-muted/50">
                 <p className="text-sm text-muted-foreground">
@@ -319,14 +460,14 @@ export default function ScheduleFacebookReelPage() {
               <div className="space-y-2">
                 <Select
                   id="client"
-                  label="Página de Facebook"
+                  label="Cliente / Cuenta"
                   value={clientId}
                   onChange={(e) => handleClientChange(e.target.value)}
                   required
                   error={validationErrors.client}
                   disabled={isLoadingClient}
                 >
-                  <option value="">Selecciona una página</option>
+                  <option value="">Selecciona un cliente</option>
                   {clients.map((client) => (
                     <option key={client.id} value={client.id.toString()}>
                       {client.name}
@@ -336,14 +477,61 @@ export default function ScheduleFacebookReelPage() {
                 {isLoadingClient && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Cargando datos de la página...</span>
+                    <span>Cargando datos del cliente...</span>
                   </div>
                 )}
                 {selectedClientData && !isLoadingClient && (
                   <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-sm text-blue-900">
-                      ✓ Página cargada: {selectedClientData.name}
+                      ✓ Cliente cargado: {selectedClientData.name}
                     </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedClientData && (
+              <div className="space-y-2">
+                <Select
+                  id="facebook-page"
+                  label="Página de Facebook"
+                  value={selectedPageId}
+                  onChange={(e) => handlePageChange(e.target.value)}
+                  required
+                  error={validationErrors.page}
+                  disabled={isLoadingPages || facebookPages.length === 0}
+                >
+                  <option value="">
+                    {isLoadingPages
+                      ? "Cargando páginas..."
+                      : facebookPages.length === 0
+                      ? "No hay páginas disponibles"
+                      : "Selecciona una página"}
+                  </option>
+                  {facebookPages.map((page) => (
+                    <option key={page.id} value={page.id}>
+                      {page.name}
+                    </option>
+                  ))}
+                </Select>
+
+                {isLoadingPages && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Cargando páginas de Facebook...</span>
+                  </div>
+                )}
+
+                {selectedPage && !isLoadingPages && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-900">
+                      ✓ Página seleccionada: {selectedPage.name}
+                    </p>
+                    {selectedPage.category && (
+                      <p className="text-xs text-green-700 mt-1">
+                        Categoría: {selectedPage.category}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
@@ -380,7 +568,6 @@ export default function ScheduleFacebookReelPage() {
               error={validationErrors.description}
             />
 
-            {/* 🎥 Input de video estrictamente limitado */}
             <div className="space-y-2">
               <label htmlFor="video" className="text-sm font-medium">
                 Archivo de Video (solo formatos MP4, MOV, AVI)
@@ -428,7 +615,6 @@ export default function ScheduleFacebookReelPage() {
               )}
             </div>
 
-            {/* Fecha y hora */}
             <div className="grid gap-4 md:grid-cols-2">
               <Input
                 type="date"
@@ -448,8 +634,11 @@ export default function ScheduleFacebookReelPage() {
                 id="time"
                 label="Hora de Publicación"
                 value={scheduledTime}
-                onChange={(e) => setScheduledTime(e.target.value)}
+                onChange={(e) => handleTimeChange(e.target.value)}
+                onFocus={handleTimeFocus}
                 required
+                min={getMinTime()}
+                step="60"
                 leftIcon={<Clock className="w-4 h-4" />}
                 disabled={isLoading}
               />
@@ -464,7 +653,6 @@ export default function ScheduleFacebookReelPage() {
               </div>
             )}
 
-            {/* Botones */}
             <div className="gap-3 grid grid-cols-1 md:grid-cols-2">
               <Button
                 type="button"

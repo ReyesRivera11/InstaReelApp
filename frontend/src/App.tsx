@@ -15,6 +15,7 @@ import React from "react";
 import { FacebookClientsPage } from "./modules/facebook/clients/pages/ClientsPage";
 import SchedulePostPage from "./modules/facebook/schedule/SchedulePostPage";
 import PublicationsPageFb from "./modules/facebook/publications/pages/PublicationsPage";
+import { MetaCallbackPageFacebook } from "./shared/hooks/metaCallBackFB";
 
 function ComingSoonPage({ network }: { network: string }) {
   return (
@@ -69,11 +70,9 @@ function AppContent() {
 
   const renderPage = () => {
     switch (currentPage) {
-      // Dashboard
       case "dashboard":
         return <DashboardPage />;
 
-      // Instagram pages
       case "clients":
       case "instagram-clients":
         return <ClientsPage />;
@@ -86,7 +85,6 @@ function AppContent() {
       case "instagram-publications":
         return <PublicationsPage />;
 
-      // Facebook pages
       case "facebook-clients":
         return <FacebookClientsPage />;
 
@@ -96,19 +94,16 @@ function AppContent() {
       case "facebook-schedule":
         return <SchedulePostPage />;
 
-      // TikTok pages (coming soon)
       case "tiktok-clients":
       case "tiktok-publications":
       case "tiktok-schedule":
         return <ComingSoonPage network="TikTok" />;
 
-      // WhatsApp pages (coming soon)
       case "whatsapp-clients":
       case "whatsapp-publications":
       case "whatsapp-schedule":
         return <ComingSoonPage network="WhatsApp" />;
 
-      // X (Twitter) pages (coming soon)
       case "x-clients":
       case "x-publications":
       case "x-schedule":
@@ -142,6 +137,10 @@ export default function App() {
         <Routes>
           <Route path="/" element={<AppContent />} />
           <Route path="/meta/callback" element={<MetaCallbackPage />} />
+          <Route
+            path="/meta/callback-fb"
+            element={<MetaCallbackPageFacebook />}
+          />
         </Routes>
       </BrowserRouter>
     </AppProvider>

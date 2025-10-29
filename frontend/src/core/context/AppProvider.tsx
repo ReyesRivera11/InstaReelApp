@@ -2,16 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { ReactNode } from "react";
-import type {
-  Publication,
-  Page,
-  User,
-  ClientDB,
-  UpdateClientDTO,
-} from "../types";
+import type { Reels, Page, User, ClientDB, UpdateClientDTO } from "../types";
 import { storage } from "../../shared/services/storage/localStorage";
 import { AppContext } from "./AppContext";
-import { apiClient } from "../../shared/services/api/instagram/apiClients";
+import { apiClient } from "../../shared/services/api/reels/apiClients";
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -19,7 +13,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
   const [clients, setClients] = useState<ClientDB[]>([]);
-  const [publications, setPublications] = useState<Publication[]>([]);
+  const [publications, setPublications] = useState<Reels[]>([]);
   const [oauthCompleted, setOauthCompleted] = useState(false);
 
   const fetchUserData = useCallback(async () => {
@@ -135,10 +129,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const addPublication = (
-    publicationData: Omit<Publication, "id" | "status">
-  ) => {
-    const newPublication: Publication = {
+  const addPublication = (publicationData: Omit<Reels, "id" | "status">) => {
+    const newPublication: Reels = {
       ...publicationData,
       id: Date.now(),
       status: "scheduled",

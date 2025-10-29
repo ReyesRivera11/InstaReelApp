@@ -2,22 +2,22 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type {
-  Publication,
-  PublicationFilters,
-  PaginatedPublications,
+  Reels,
+  ReelsFilters,
+  PaginatedReels,
 } from "../../../../core/types";
 
 import { AlertCircle, CheckCircle, X, RefreshCw } from "lucide-react";
 import { useApp } from "../../../../shared/hooks/useApp";
 import { Alert, Button } from "../../../../shared/components/ui";
 import { PublicationDetailModal } from "../components/PublicationDetailModal";
-import { appPublications } from "../../../../shared/services/api/instagram/apiPublications";
+import { appReelss } from "../../../../shared/services/api/reels/apiPublications";
 
 type ViewMode = "table" | "calendar";
 
 const PublicationsPage = () => {
   const { clients } = useApp();
-  const [publications, setPublications] = useState<Publication[]>([]);
+  const [publications, setPublications] = useState<Reels[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,19 +70,19 @@ const PublicationsPage = () => {
       setIsLoading(true);
       setError(null);
 
-      const filters: PublicationFilters = {
+      const filters: ReelsFilters = {
         page: currentPage,
         limit: itemsPerPage,
+        social_identity: "INSTAGRAM",
       };
 
       if (debouncedSearchTerm) filters.search = debouncedSearchTerm;
       if (statusFilter !== "all")
         filters.status = statusFilter as "SCHEDULED" | "PUBLISHED";
 
-      const response: PaginatedPublications =
-        await appPublications.getPublications(filters);
-      if (response.publications && Array.isArray(response.publications)) {
-        setPublications(response.publications);
+      const response: PaginatedReels = await appReelss.getReelss(filters);
+      if (response.reels && Array.isArray(response.reels)) {
+        setPublications(response.reels);
         setTotalPages(response.totalPages);
         setTotalPublications(response.total);
         setHasNext(response.hasNext);
@@ -126,7 +126,7 @@ const PublicationsPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchTerm, statusFilter]);
 
-  const getScheduledDate = (pub: Publication): string | undefined => {
+  const getScheduledDate = (pub: Reels): string | undefined => {
     return pub.scheduled_date ?? pub.scheduledDate ?? undefined;
   };
 
@@ -181,7 +181,7 @@ const PublicationsPage = () => {
     );
   };
 
-  const formatPublicationDate = (pub: Publication) => {
+  const formatPublicationDate = (pub: Reels) => {
     const dateString = getScheduledDate(pub);
     if (!dateString) return "No programado";
 
@@ -196,7 +196,7 @@ const PublicationsPage = () => {
     }
   };
 
-  const formatPublicationTime = (pub: Publication) => {
+  const formatPublicationTime = (pub: Reels) => {
     const dateString = getScheduledDate(pub);
     if (!dateString) return "";
 
@@ -430,7 +430,7 @@ const PublicationsPage = () => {
     await loadPublications();
   };
 
-  const handleViewDetails = (publication: Publication) => {
+  const handleViewDetails = (publication: Reels) => {
     setSelectedPublicationId(publication.id);
     setIsModalOpen(true);
   };
@@ -440,7 +440,7 @@ const PublicationsPage = () => {
     setSelectedPublicationId(null);
   };
 
-  const getClientName = (publication: Publication) => {
+  const getClientName = (publication: Reels) => {
     if (publication.clientName) {
       return publication.clientName;
     }
@@ -460,7 +460,6 @@ const PublicationsPage = () => {
           </span>
         );
       case "PUBLISHED":
-      case "published":
         return (
           <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
             PUBLICADO
@@ -607,8 +606,8 @@ const PublicationsPage = () => {
                 className="w-full px-3 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 <option value="all">Todos los estados</option>
-                <option value="scheduled">Programado</option>
-                <option value="published">Publicado</option>
+                <option value="SCHEDULED">Programado</option>
+                <option value="PUBLISHED">Publicado</option>
               </select>
             </div>
           </div>

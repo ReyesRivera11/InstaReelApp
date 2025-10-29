@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Publication } from "../../../../core/types";
-import { appPublications } from "../../../../shared/services/api/instagram/apiPublications";
+import type { Reels } from "../../../../core/types";
+import { appReelss } from "../../../../shared/services/api/reels/apiPublications";
 
 interface PublicationDetailModalProps {
   publicationId: number | null;
@@ -16,7 +16,7 @@ export function PublicationDetailModal({
   isOpen,
   onClose,
 }: PublicationDetailModalProps) {
-  const [publication, setPublication] = useState<Publication | null>(null);
+  const [publication, setPublication] = useState<Reels | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,12 +31,9 @@ export function PublicationDetailModal({
         setIsLoading(true);
         setError(null);
 
-        const response = await appPublications.getPublicationById(
-          publicationId.toString()
-        );
-        console.log(response);
-        if (response.publication) {
-          setPublication(response.publication);
+        const response = await appReelss.getReelsById(publicationId.toString());
+        if (response.reel) {
+          setPublication(response.reel);
         } else {
           setError(response.error || "Error al cargar la publicación");
         }
@@ -107,11 +104,11 @@ export function PublicationDetailModal({
 
   if (!publication) return null;
 
-  const getScheduledDate = (pub: Publication): string | undefined => {
+  const getScheduledDate = (pub: Reels): string | undefined => {
     return pub.scheduled_date ?? pub.scheduledDate ?? undefined;
   };
 
-  const getVideoUrl = (pub: Publication): string | undefined => {
+  const getVideoUrl = (pub: Reels): string | undefined => {
     return pub.media_url ?? pub.video_url ?? undefined;
   };
 
@@ -209,7 +206,6 @@ export function PublicationDetailModal({
         </div>
 
         <div className="p-6 space-y-6">
-          {/* CLIENTE */}
           <div className="flex items-start gap-4 p-4 bg-muted/50 rounded-lg">
             <div className="w-12 h-12 bg-[#1877F2] rounded-full flex items-center justify-center flex-shrink-0">
               <svg
@@ -242,7 +238,6 @@ export function PublicationDetailModal({
             </div>
           </div>
 
-          {/* VISTA PREVIA - IGUAL AL SEGUNDO COMPONENTE */}
           <div>
             <div className="flex items-center gap-2 mb-3">
               <svg
@@ -394,7 +389,6 @@ export function PublicationDetailModal({
             )}
           </div>
 
-          {/* DESCRIPCIÓN */}
           <div>
             <div className="flex items-center gap-2 mb-3">
               <svg
@@ -421,7 +415,6 @@ export function PublicationDetailModal({
             </div>
           </div>
 
-          {/* FECHA Y HORA */}
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -469,7 +462,6 @@ export function PublicationDetailModal({
             </div>
           </div>
 
-          {/* CERRAR */}
           <div className="flex gap-3 pt-4 border-t border-border">
             <button
               onClick={onClose}

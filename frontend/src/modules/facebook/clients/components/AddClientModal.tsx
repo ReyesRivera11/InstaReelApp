@@ -1,13 +1,13 @@
 "use client";
 
 import type React from "react";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal } from "../../../../shared/components/ui/Modal";
-import { Input } from "../../../../shared/components/ui/Input";
-import { Textarea } from "../../../../shared/components/ui/Textarea";
 import { Button } from "../../../../shared/components/ui/Button";
-import { Label } from "../../../../shared/components/ui/Label";
+import { Input } from "../../../../shared/components/ui/Input";
+import { Alert } from "../../../../shared/components/ui/Alert";
+import { AlertCircle, CheckCircle, Facebook } from "lucide-react";
+import { useApp } from "../../../../shared/hooks/useApp";
 
 interface AddClientModalProps {
   isOpen: boolean;
@@ -16,95 +16,224 @@ interface AddClientModalProps {
     name: string;
     username: string;
     description?: string;
-  }) => void;
+  }) => Promise<void>;
 }
 
-export function AddClientModal({
-  isOpen,
-  onClose,
-  onSubmit,
-}: AddClientModalProps) {
+export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
   const [name, setName] = useState("");
-  const [username, setUsername] = useState("");
+  const [pageName, setPageName] = useState("");
   const [description, setDescription] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const { setOauthCompleted } = useApp();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [validationErrors, setValidationErrors] = useState<{
+    name?: string;
+    pageName?: string;
+  }>({});
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => setSuccess(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+
+      if (event.data.type === "FACEBOOK_OAUTH_SUCCESS") {
+        setSuccess(true);
+        setTimeout(() => {
+          handleReset();
+          setOauthCompleted(true);
+        }, 1500);
+      } else if (event.data.type === "FACEBOOK_OAUTH_ERROR") {
+        setError(event.data.error || "Error en la autenticación de Facebook");
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [setOauthCompleted]);
+
+  const validateName = (value: string) => {
+    if (!value.trim()) return "Requerido";
+    if (value.length > 100) return "Máximo 100 caracteres";
+    return undefined;
+  };
+
+  const validatePageName = (value: string) => {
+    if (!value.trim()) return "Requerido";
+    if (value.includes("@")) return "No debe incluir @";
+    if (value.length < 3) return "Mínimo 3 caracteres";
+    if (value.length > 50) return "Máximo 50 caracteres";
+    if (!/^[a-zA-Z0-9._-]+$/.test(value))
+      return "Solo letras, números, puntos y guiones";
+    return undefined;
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setName(value);
+    const error = validateName(value);
+    setValidationErrors((prev) => ({ ...prev, name: error }));
+  };
+
+  const handlePageNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setPageName(value);
+    const error = validatePageName(value);
+    setValidationErrors((prev) => ({ ...prev, pageName: error }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ name, username, description });
+
+    const nameError = validateName(name);
+    const pageError = validatePageName(pageName);
+
+    if (nameError || pageError) {
+      setValidationErrors({ name: nameError, pageName: pageError });
+      setError("Por favor corrige los errores en el formulario");
+      return;
+    }
+
+    const clientData = {
+      name,
+      username: pageName,
+      description,
+    };
+    localStorage.setItem("pending_client_fb", JSON.stringify(clientData));
+
+    const oauthUrl =
+      "https://www.facebook.com/dialog/oauth?" +
+      new URLSearchParams({
+        client_id: "25204565109180194",
+        redirect_uri: "https://instareel-app.netlify.app/meta/callback-fb",
+        response_type: "token",
+        display: "popup",
+        scope: [
+          "public_profile",
+          "pages_show_list",
+          "pages_read_engagement",
+          "pages_read_user_content",
+          "pages_manage_posts",
+          "pages_manage_engagement",
+        ].join(","),
+      }).toString();
+    const width = 600;
+    const height = 700;
+    const left = window.screen.width / 2 - width / 2;
+    const top = window.screen.height / 2 - height / 2;
+
+    window.open(
+      oauthUrl,
+      "facebook_oauth",
+      `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+    );
+  };
+
+  const handleReset = () => {
     setName("");
-    setUsername("");
+    setPageName("");
     setDescription("");
+    setError(null);
+    setSuccess(false);
+    setValidationErrors({});
+  };
+
+  const handleCancel = () => {
+    handleReset();
+    onClose();
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Nuevo Cliente de Facebook"
-      maxWidth="2xl"
-    >
-      <p className="text-muted-foreground mb-6">
-        Registra una nueva página de Facebook para gestionar
-      </p>
+    <>
+      {error && (
+        <Alert variant="error" icon={<AlertCircle className="w-5 h-5" />}>
+          {error}
+        </Alert>
+      )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <Label htmlFor="name">Nombre del Cliente</Label>
-          <Input
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Nombre de la empresa o marca"
-            required
-          />
-        </div>
+      {success && (
+        <Alert variant="success" icon={<CheckCircle className="w-5 h-5" />}>
+          ¡Página de Facebook conectada exitosamente!
+        </Alert>
+      )}
 
-        <div>
-          <Label htmlFor="username">Nombre de la Página</Label>
-          <Input
-            id="username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="nombre_pagina"
-            required
-          />
-        </div>
+      <Modal
+        isOpen={isOpen}
+        onClose={handleCancel}
+        title="Nuevo Cliente de Facebook"
+        description="Registra una nueva página de Facebook para gestionar"
+        maxWidth="2xl"
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Input
+              id="name"
+              label="Nombre del Cliente"
+              placeholder="Nombre de la empresa o marca"
+              value={name}
+              onChange={handleNameChange}
+            />
+            {validationErrors.name && (
+              <p className="text-sm text-red-600 mt-1">
+                {validationErrors.name}
+              </p>
+            )}
+          </div>
 
-        <div>
-          <Label htmlFor="description">Descripción</Label>
-          <Textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Breve descripción del cliente (opcional)"
-            rows={3}
-          />
-        </div>
+          <div>
+            <Input
+              id="pageName"
+              label="Nombre de la Página"
+              placeholder="nombre_pagina"
+              value={pageName}
+              onChange={handlePageNameChange}
+              leftIcon={<span className="text-muted-foreground">@</span>}
+            />
+            {validationErrors.pageName && (
+              <p className="text-sm text-red-600 mt-1">
+                {validationErrors.pageName}
+              </p>
+            )}
+          </div>
 
-        <div className="flex gap-3 pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            className="flex-1 bg-transparent"
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-lg shadow-blue-500/30"
-          >
-            <svg
-              className="w-5 h-5 mr-2"
-              fill="currentColor"
-              viewBox="0 0 24 24"
+          <div>
+            <Input
+              id="description"
+              label="Descripción"
+              placeholder="Breve descripción del cliente (opcional)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-col-reverse sm:flex-row gap-2 justify-end pt-4">
+            <Button type="button" variant="outline" onClick={handleCancel}>
+              Cancelar
+            </Button>
+
+            <Button
+              type="submit"
+              className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-lg shadow-blue-500/30"
             >
-              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-            </svg>
-            Conectar con Facebook
-          </Button>
-        </div>
-      </form>
-    </Modal>
+              <Facebook />
+              Conectar con Facebook
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </>
   );
 }

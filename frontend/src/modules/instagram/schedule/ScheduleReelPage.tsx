@@ -23,9 +23,8 @@ import {
   Upload,
 } from "lucide-react";
 import type { ClientDB } from "../../../core/types";
-import { apiClient } from "../../../shared/services/api/instagram/apiClients";
-import { metaApi } from "../../../shared/services/api/instagram/apiMeta";
-import { appPublications } from "../../../shared/services/api/instagram/apiPublications";
+import { appReelss } from "../../../shared/services/api/reels/apiPublications";
+import { apiClient } from "../../../shared/services/api/reels/apiClients";
 
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
 const MIN_TITLE_LENGTH = 3;
@@ -188,21 +187,6 @@ export default function ScheduleReelPage() {
     setUploadProgress("Creando contenedor de media en Instagram...");
 
     try {
-      const containerResponse = await metaApi.createMediaContainer(
-        selectedClientData.insta_id,
-        {
-          media_type: "REELS",
-          caption: description,
-          access_token: selectedClientData.long_lived_token,
-          upload_type: "resumable",
-        }
-      );
-
-      if (!containerResponse.id) {
-        throw new Error("No se pudo crear el contenedor de media");
-      }
-
-      const containerMediaId = containerResponse.id;
       setUploadProgress("Enviando datos al servidor...");
 
       const formData = new FormData();
@@ -212,15 +196,14 @@ export default function ScheduleReelPage() {
 
       const scheduledDateTime = toLocalISO(scheduledDate, scheduledTime);
       formData.append("scheduled_date", scheduledDateTime);
-
-      formData.append("container_media_id", containerMediaId);
-
+      formData.append("social_identity", "INSTAGRAM");
       formData.append("reel", videoFile);
 
       setUploadProgress("Procesando reel en el servidor...");
 
-      const response = await appPublications.scheduleReel(formData);
-      if (!response) {
+      const response = await appReelss.scheduleReel(formData);
+      console.log(response);
+      if (response.success === false) {
         throw new Error("Error al programar el reel");
       }
 

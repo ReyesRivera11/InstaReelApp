@@ -1,8 +1,8 @@
 import type {
-  CreatePublicationDto,
-  Publication,
-  PublicationFilters,
-  PaginatedPublications,
+  CreateReelsDto,
+  Reels,
+  ReelsFilters,
+  PaginatedReels,
 } from "../../../../core/types";
 import type { AxiosError } from "axios";
 import { axiosInstance } from "../apiBase";
@@ -20,11 +20,12 @@ export interface ScheduledReel {
   updated_at?: string;
 }
 
-export interface PublicationResponse<T> {
+export interface ReelsResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
-  publication?: T;
+  Reels?: T;
+  reel?: T;
 }
 
 interface ErrorResponse {
@@ -32,14 +33,13 @@ interface ErrorResponse {
   error?: string;
 }
 
-class AppPublications {
-  async createPublication(
-    data: CreatePublicationDto
-  ): Promise<PublicationResponse<Publication>> {
+class AppReelss {
+  async createReels(data: CreateReelsDto): Promise<ReelsResponse<Reels>> {
     try {
-      const response = await axiosInstance.post<
-        PublicationResponse<Publication>
-      >("/publication/create", data);
+      const response = await axiosInstance.post<ReelsResponse<Reels>>(
+        "/reels/create",
+        data
+      );
       return response.data;
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
@@ -60,19 +60,16 @@ class AppPublications {
     }
   }
 
-  async getPublications(
-    filters?: PublicationFilters
-  ): Promise<PaginatedPublications> {
+  async getReelss(filters?: ReelsFilters): Promise<PaginatedReels> {
     try {
-      const response = await axiosInstance.get<PaginatedPublications>(
-        "/publication",
-        { params: filters }
-      );
+      const response = await axiosInstance.get<PaginatedReels>("/reels/", {
+        params: filters,
+      });
       return response.data;
     } catch (error: unknown) {
-      console.error("[Axios] Error in getPublications:", error);
+      console.error("[Axios] Error in getReelss:", error);
       return {
-        publications: [],
+        reels: [],
         total: 0,
         page: 1,
         totalPages: 1,
@@ -82,13 +79,11 @@ class AppPublications {
     }
   }
 
-  async getPublicationById(
-    id: string
-  ): Promise<PublicationResponse<Publication>> {
+  async getReelsById(id: string): Promise<ReelsResponse<Reels>> {
     try {
-      const response = await axiosInstance.get<
-        PublicationResponse<Publication>
-      >(`/publication/${id}`);
+      const response = await axiosInstance.get<ReelsResponse<Reels>>(
+        `/reels/${id}`
+      );
       return response.data;
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
@@ -109,14 +104,15 @@ class AppPublications {
     }
   }
 
-  async updatePublication(
+  async updateReels(
     id: number,
-    data: Partial<CreatePublicationDto>
-  ): Promise<PublicationResponse<Publication>> {
+    data: Partial<CreateReelsDto>
+  ): Promise<ReelsResponse<Reels>> {
     try {
-      const response = await axiosInstance.put<
-        PublicationResponse<Publication>
-      >(`/publication/${id}`, data);
+      const response = await axiosInstance.put<ReelsResponse<Reels>>(
+        `/Reels/${id}`,
+        data
+      );
       return response.data;
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
@@ -137,10 +133,10 @@ class AppPublications {
     }
   }
 
-  async deletePublication(id: string): Promise<PublicationResponse<void>> {
+  async deleteReels(id: string): Promise<ReelsResponse<void>> {
     try {
-      const response = await axiosInstance.delete<PublicationResponse<void>>(
-        `/publication/${id}`
+      const response = await axiosInstance.delete<ReelsResponse<void>>(
+        `/reels/${id}`
       );
       return response.data;
     } catch (error: unknown) {
@@ -164,15 +160,17 @@ class AppPublications {
 
   async scheduleReel(
     formData: FormData
-  ): Promise<PublicationResponse<ScheduledReel>> {
+  ): Promise<ReelsResponse<ScheduledReel>> {
     try {
-      const response = await axiosInstance.post<
-        PublicationResponse<ScheduledReel>
-      >("/publication/schedule-reel", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const response = await axiosInstance.post<ReelsResponse<ScheduledReel>>(
+        "/reels/schedule-reel",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
       return response.data;
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
@@ -194,4 +192,4 @@ class AppPublications {
   }
 }
 
-export const appPublications = new AppPublications();
+export const appReelss = new AppReelss();

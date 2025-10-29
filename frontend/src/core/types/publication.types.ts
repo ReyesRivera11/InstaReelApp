@@ -1,4 +1,4 @@
-export interface Publication {
+export interface Reels  {
   id: number;
   client_id: number;
   title: string;
@@ -16,7 +16,7 @@ export interface Publication {
   media_url?: string;
 }
 
-export interface CreatePublicationDto {
+export interface CreateReelsDto {
   client_id: number;
   title: string;
   description?: string;
@@ -27,15 +27,16 @@ export interface CreatePublicationDto {
   videoSize?: number;
 }
 
-export interface PublicationFilters {
+export interface ReelsFilters {
   search?: string;
   status?: "SCHEDULED" | "PUBLISHED";
   page?: number;
   limit?: number;
+  social_identity?: "INSTAGRAM" | "FACEBOOK";
 }
 
-export interface PaginatedPublications {
-  publications: Publication[];
+export interface PaginatedReels {
+  reels: Reels[];
   total: number;
   page: number;
   totalPages: number;
