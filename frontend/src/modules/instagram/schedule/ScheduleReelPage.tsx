@@ -1,295 +1,351 @@
-"use client";
+"use client"
 
-import type React from "react";
+import type React from "react"
 
-import { useState, useEffect } from "react";
-import {
-  Button,
-  Input,
-  Select,
-  Textarea,
-  Card,
-  CardHeader,
-  CardContent,
-  Alert,
-} from "../../../shared/components/ui";
-import { useApp } from "../../../shared/hooks/useApp";
-import {
-  AlertCircle,
-  Calendar,
-  CheckCircle,
-  Clock,
-  Loader2,
-  Upload,
-} from "lucide-react";
-import type { ClientDB } from "../../../core/types";
-import { appReelss } from "../../../shared/services/api/reels/apiPublications";
-import { apiClient } from "../../../shared/services/api/reels/apiClients";
+import { useState, useEffect } from "react"
 
-const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
-const MIN_TITLE_LENGTH = 3;
-const MAX_TITLE_LENGTH = 100;
-const MIN_DESCRIPTION_LENGTH = 1;
-const MAX_DESCRIPTION_LENGTH = 2200;
-const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/x-msvideo"];
+import { AlertCircle, Calendar, CheckCircle, Clock, Loader2, Upload } from "lucide-react"
+import { apiClient } from "../../../shared/services/api/reels/apiClients"
+import { appReelss } from "../../../shared/services/api/reels/apiPublications"
+import { Alert, Button, Card, CardContent, CardHeader, Input, Select, Textarea } from "../../../shared/components/ui"
+import { useApp } from "../../../shared/hooks/useApp"
+import type { ClientDB } from "../../../core/types"
+
+
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024
+const MIN_TITLE_LENGTH = 3
+const MAX_TITLE_LENGTH = 100
+const MIN_DESCRIPTION_LENGTH = 1
+const MAX_DESCRIPTION_LENGTH = 2200
+const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/x-msvideo"]
+const MAX_SCHEDULE_DAYS = 29
 
 export default function ScheduleReelPage() {
-  const { clients, setCurrentPage } = useApp();
-  const [clientId, setClientId] = useState("");
-  const [selectedClientData, setSelectedClientData] = useState<ClientDB | null>(
-    null
-  );
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [scheduledDate, setScheduledDate] = useState("");
-  const [scheduledTime, setScheduledTime] = useState("");
+  const { clients, setCurrentPage } = useApp()
+  const [clientId, setClientId] = useState("")
+  const [selectedClientData, setSelectedClientData] = useState<ClientDB | null>(null)
+  const [title, setTitle] = useState("")
+  const [description, setDescription] = useState("")
+  const [videoFile, setVideoFile] = useState<File | null>(null)
+  const [scheduledDate, setScheduledDate] = useState("")
+  const [scheduledTime, setScheduledTime] = useState("")
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingClient, setIsLoadingClient] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingClient, setIsLoadingClient] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<string>("")
 
   const [validationErrors, setValidationErrors] = useState<{
-    title?: string;
-    description?: string;
-    video?: string;
-    date?: string;
-    client?: string;
-  }>({});
+    title?: string
+    description?: string
+    video?: string
+    date?: string
+    client?: string
+  }>({})
+
+  const getMinDateTime = () => {
+    const now = new Date()
+    const minTime = new Date(now.getTime() + 15 * 60 * 1000)
+
+    const year = minTime.getFullYear()
+    const month = String(minTime.getMonth() + 1).padStart(2, "0")
+    const day = String(minTime.getDate()).padStart(2, "0")
+    const hours = String(minTime.getHours()).padStart(2, "0")
+    const minutes = String(minTime.getMinutes()).padStart(2, "0")
+
+    return {
+      date: `${year}-${month}-${day}`,
+      time: `${hours}:${minutes}`,
+    }
+  }
+
+  const getMaxDate = () => {
+    const today = new Date()
+    const maxDate = new Date(today.getTime() + MAX_SCHEDULE_DAYS * 24 * 60 * 60 * 1000)
+    const year = maxDate.getFullYear()
+    const month = String(maxDate.getMonth() + 1).padStart(2, "0")
+    const day = String(maxDate.getDate()).padStart(2, "0")
+    return `${year}-${month}-${day}`
+  }
+
+  const getMinDate = () => {
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = String(today.getMonth() + 1).padStart(2, "0")
+    const day = String(today.getDate()).padStart(2, "0")
+    return `${year}-${month}-${day}`
+  }
+
+  const getMinTime = () => {
+    if (!scheduledDate) return undefined
+    const today = getMinDate()
+    return scheduledDate === today ? getMinDateTime().time : "00:00"
+  }
 
   const handleClientChange = async (newClientId: string) => {
-    setClientId(newClientId);
+    setClientId(newClientId)
     setValidationErrors({
       ...validationErrors,
       client: undefined,
-    });
+    })
 
     if (!newClientId) {
-      setSelectedClientData(null);
-      return;
+      setSelectedClientData(null)
+      return
     }
-    setIsLoadingClient(true);
+    setIsLoadingClient(true)
     try {
-      const response = await apiClient.getClientById(
-        Number.parseInt(newClientId)
-      );
+      const response = await apiClient.getClientById(Number.parseInt(newClientId))
       if (response.client) {
-        setSelectedClientData(response.client);
+        setSelectedClientData(response.client)
       } else {
-        setError(response.error || "Error al obtener datos del cliente");
-        setSelectedClientData(null);
+        setError(response.error || "Error al obtener datos del cliente")
+        setSelectedClientData(null)
       }
     } catch {
-      setError("Error al cargar los datos del cliente");
-      setSelectedClientData(null);
+      setError("Error al cargar los datos del cliente")
+      setSelectedClientData(null)
     } finally {
-      setIsLoadingClient(false);
+      setIsLoadingClient(false)
     }
-  };
+  }
 
   const validateForm = (): boolean => {
-    const errors: typeof validationErrors = {};
+    const errors: typeof validationErrors = {}
 
     if (!clientId) {
-      errors.client = "Debes seleccionar un cliente";
+      errors.client = "Debes seleccionar un cliente"
     }
 
     if (title.length < MIN_TITLE_LENGTH) {
-      errors.title = `El título debe tener al menos ${MIN_TITLE_LENGTH} caracteres`;
+      errors.title = `El título debe tener al menos ${MIN_TITLE_LENGTH} caracteres`
     } else if (title.length > MAX_TITLE_LENGTH) {
-      errors.title = `El título no puede exceder ${MAX_TITLE_LENGTH} caracteres`;
+      errors.title = `El título no puede exceder ${MAX_TITLE_LENGTH} caracteres`
     }
 
     if (description.length < MIN_DESCRIPTION_LENGTH) {
-      errors.description = "La descripción es requerida";
+      errors.description = "La descripción es requerida"
     } else if (description.length > MAX_DESCRIPTION_LENGTH) {
-      errors.description = `La descripción no puede exceder ${MAX_DESCRIPTION_LENGTH} caracteres`;
+      errors.description = `La descripción no puede exceder ${MAX_DESCRIPTION_LENGTH} caracteres`
     }
 
     if (!videoFile) {
-      errors.video = "Debes seleccionar un archivo de video";
+      errors.video = "Debes seleccionar un archivo de video"
     } else if (videoFile.size > MAX_VIDEO_SIZE) {
-      errors.video = `El video no puede exceder ${
-        MAX_VIDEO_SIZE / (1024 * 1024)
-      }MB`;
+      errors.video = `El video no puede exceder ${MAX_VIDEO_SIZE / (1024 * 1024)}MB`
     } else if (!ALLOWED_VIDEO_TYPES.includes(videoFile.type)) {
-      errors.video = "Formato de video no válido. Usa MP4, MOV o AVI";
+      errors.video = "Formato de video no válido. Usa MP4, MOV o AVI"
     }
 
     if (!scheduledDate || !scheduledTime) {
-      errors.date = "Debes seleccionar fecha y hora de publicación";
+      errors.date = "Debes seleccionar fecha y hora de publicación"
     } else {
-      const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
-      const now = new Date();
-      if (scheduledDateTime <= now) {
-        errors.date = "La fecha de publicación debe ser futura";
+      const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`)
+      const now = new Date()
+      const minScheduleTime = new Date(now.getTime() + 15 * 60 * 1000)
+      const maxScheduleTime = new Date(now.getTime() + MAX_SCHEDULE_DAYS * 24 * 60 * 60 * 1000)
+
+      if (scheduledDateTime <= minScheduleTime) {
+        errors.date = "La fecha de publicación debe ser al menos 15 minutos en el futuro"
+      } else if (scheduledDateTime > maxScheduleTime) {
+        errors.date = `La fecha de publicación no puede ser más de ${MAX_SCHEDULE_DAYS} días en el futuro`
       }
     }
 
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   function toLocalISO(date: string, time: string) {
-    const [hours, minutes] = time.split(":").map(Number);
+    const [hours, minutes] = time.split(":").map(Number)
 
-    const localDate = new Date();
-    localDate.setFullYear(Number(date.split("-")[0]));
-    localDate.setMonth(Number(date.split("-")[1]) - 1);
-    localDate.setDate(Number(date.split("-")[2]));
-    localDate.setHours(hours);
-    localDate.setMinutes(minutes);
-    localDate.setSeconds(0);
-    localDate.setMilliseconds(0);
+    const localDate = new Date()
+    localDate.setFullYear(Number(date.split("-")[0]))
+    localDate.setMonth(Number(date.split("-")[1]) - 1)
+    localDate.setDate(Number(date.split("-")[2]))
+    localDate.setHours(hours)
+    localDate.setMinutes(minutes)
+    localDate.setSeconds(0)
+    localDate.setMilliseconds(0)
 
-    const tzOffset = -localDate.getTimezoneOffset();
-    const sign = tzOffset >= 0 ? "+" : "-";
-    const diffHours = String(Math.floor(Math.abs(tzOffset) / 60)).padStart(
+    const tzOffset = -localDate.getTimezoneOffset()
+    const sign = tzOffset >= 0 ? "+" : "-"
+    const diffHours = String(Math.floor(Math.abs(tzOffset) / 60)).padStart(2, "0")
+    const diffMinutes = String(Math.abs(tzOffset) % 60).padStart(2, "0")
+    const offset = `${sign}${diffHours}:${diffMinutes}`
+
+    const isoLocal = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, "0")}-${String(
+      localDate.getDate(),
+    ).padStart(2, "0")}T${String(localDate.getHours()).padStart(2, "0")}:${String(localDate.getMinutes()).padStart(
       2,
-      "0"
-    );
-    const diffMinutes = String(Math.abs(tzOffset) % 60).padStart(2, "0");
-    const offset = `${sign}${diffHours}:${diffMinutes}`;
+      "0",
+    )}:00${offset}`
 
-    const isoLocal = `${localDate.getFullYear()}-${String(
-      localDate.getMonth() + 1
-    ).padStart(2, "0")}-${String(localDate.getDate()).padStart(
-      2,
-      "0"
-    )}T${String(localDate.getHours()).padStart(2, "0")}:${String(
-      localDate.getMinutes()
-    ).padStart(2, "0")}:00${offset}`;
-
-    return isoLocal;
+    return isoLocal
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (!validateForm()) {
-      setError("Por favor corrige los errores en el formulario");
-      return;
+      setError("Por favor corrige los errores en el formulario")
+      return
     }
 
     if (!videoFile) {
-      setError("Por favor selecciona un archivo de video");
-      return;
+      setError("Por favor selecciona un archivo de video")
+      return
     }
 
     if (!selectedClientData) {
-      setError("No se pudieron cargar los datos del cliente");
-      return;
+      setError("No se pudieron cargar los datos del cliente")
+      return
     }
 
-    setIsLoading(true);
-    setError(null);
-    setUploadProgress("Creando contenedor de media en Instagram...");
+    setIsLoading(true)
+    setError(null)
+    setUploadProgress("Creando contenedor de media en Instagram...")
 
     try {
-      setUploadProgress("Enviando datos al servidor...");
+      setUploadProgress("Enviando datos al servidor...")
 
-      const formData = new FormData();
-      formData.append("client_id", clientId);
-      formData.append("title", title);
-      formData.append("description", description);
+      const formData = new FormData()
+      formData.append("client_id", clientId)
+      formData.append("title", title)
+      formData.append("description", description)
 
-      const scheduledDateTime = toLocalISO(scheduledDate, scheduledTime);
-      formData.append("scheduled_date", scheduledDateTime);
-      formData.append("social_identity", "INSTAGRAM");
-      formData.append("reel", videoFile);
+      const scheduledDateTime = toLocalISO(scheduledDate, scheduledTime)
+      formData.append("scheduled_date", scheduledDateTime)
+      formData.append("social_identity", "INSTAGRAM")
+      formData.append("reel", videoFile)
 
-      setUploadProgress("Procesando reel en el servidor...");
+      setUploadProgress("Procesando reel en el servidor...")
 
-      const response = await appReelss.scheduleReel(formData);
-      console.log(response);
+      const response = await appReelss.scheduleReel(formData)
+      console.log(response)
       if (response.success === false) {
-        throw new Error("Error al programar el reel");
+        throw new Error("Error al programar el reel")
       }
 
-      setSuccess(true);
-      setClientId("");
-      setTitle("");
-      setDescription("");
-      setVideoFile(null);
-      setScheduledDate("");
-      setScheduledTime("");
-      setSelectedClientData(null);
-      setValidationErrors({});
-      setUploadProgress("");
+      setSuccess(true)
+      setClientId("")
+      setTitle("")
+      setDescription("")
+      setVideoFile(null)
+      setScheduledDate("")
+      setScheduledTime("")
+      setSelectedClientData(null)
+      setValidationErrors({})
+      setUploadProgress("")
 
       setTimeout(() => {
-        setCurrentPage("publications");
-      }, 2000);
+        setCurrentPage("publications")
+      }, 2000)
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Error al programar el reel. Por favor intenta de nuevo."
-      );
-      setUploadProgress("");
+      setError(err instanceof Error ? err.message : "Error al programar el reel. Por favor intenta de nuevo.")
+      setUploadProgress("")
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files?.[0]
 
-    if (!file) return;
+    if (!file) return
 
-    const errors: typeof validationErrors = { ...validationErrors };
+    const errors: typeof validationErrors = { ...validationErrors }
 
     if (!file.type.startsWith("video/")) {
-      errors.video = "Por favor selecciona un archivo de video válido";
-      setValidationErrors(errors);
-      return;
+      errors.video = "Por favor selecciona un archivo de video válido"
+      setValidationErrors(errors)
+      return
     }
 
     if (file.size > MAX_VIDEO_SIZE) {
-      errors.video = `El video no puede exceder ${
-        MAX_VIDEO_SIZE / (1024 * 1024)
-      }MB`;
-      setValidationErrors(errors);
-      return;
+      errors.video = `El video no puede exceder ${MAX_VIDEO_SIZE / (1024 * 1024)}MB`
+      setValidationErrors(errors)
+      return
     }
 
     if (!ALLOWED_VIDEO_TYPES.includes(file.type)) {
-      errors.video = "Formato no soportado. Usa MP4, MOV o AVI";
-      setValidationErrors(errors);
-      return;
+      errors.video = "Formato no soportado. Usa MP4, MOV o AVI"
+      setValidationErrors(errors)
+      return
     }
 
-    delete errors.video;
-    setValidationErrors(errors);
-    setVideoFile(file);
-  };
+    delete errors.video
+    setValidationErrors(errors)
+    setVideoFile(file)
+  }
+
+  const handleTimeChange = (newTime: string) => {
+    if (!scheduledDate) {
+      setScheduledTime(newTime)
+      return
+    }
+
+    const today = getMinDate()
+    const minTime = getMinDateTime().time
+
+    if (scheduledDate === today && newTime < minTime) {
+      setScheduledTime(minTime)
+      setValidationErrors({
+        ...validationErrors,
+        date: "No puedes seleccionar una hora que ya pasó",
+      })
+    } else {
+      setScheduledTime(newTime)
+      if (validationErrors.date === "No puedes seleccionar una hora que ya pasó") {
+        setValidationErrors({ ...validationErrors, date: undefined })
+      }
+    }
+  }
+
+  const handleTimeFocus = () => {
+    if (!scheduledDate) return
+    const today = getMinDate()
+    if (scheduledDate === today) {
+      const { time } = getMinDateTime()
+      if (!scheduledTime || scheduledTime < time) {
+        setScheduledTime(time)
+        setValidationErrors({
+          ...validationErrors,
+          date: undefined,
+        })
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (scheduledDate) {
+      const today = getMinDate()
+      if (scheduledDate === today && !scheduledTime) {
+        const { time } = getMinDateTime()
+        setScheduledTime(time)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scheduledDate])
 
   useEffect(() => {
     if (error) {
       const timer = setTimeout(() => {
-        setError(null);
-      }, 3000);
-      return () => clearTimeout(timer);
+        setError(null)
+      }, 3000)
+      return () => clearTimeout(timer)
     }
-  }, [error]);
+  }, [error])
 
   useEffect(() => {
     if (success) {
       const timer = setTimeout(() => {
-        setSuccess(false);
-      }, 3000);
-      return () => clearTimeout(timer);
+        setSuccess(false)
+      }, 3000)
+      return () => clearTimeout(timer)
     }
-  }, [success]);
-
-  const getMinDate = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
+  }, [success])
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -306,28 +362,21 @@ export default function ScheduleReelPage() {
       )}
 
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-          Programar Reel
-        </h1>
-        <p className="text-muted-foreground">
-          Crea y programa una nueva publicación de Instagram Reel
-        </p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Programar Reel</h1>
+        <p className="text-muted-foreground">Crea y programa una nueva publicación de Instagram Reel</p>
       </div>
 
       <Card>
         <CardHeader>
           <h2 className="text-xl font-semibold">Detalles de la Publicación</h2>
-          <p className="text-sm text-muted-foreground">
-            Completa la información del reel que deseas programar
-          </p>
+          <p className="text-sm text-muted-foreground">Completa la información del reel que deseas programar</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {clients.length === 0 ? (
               <div className="p-4 border border-border rounded-lg bg-muted/50">
                 <p className="text-sm text-muted-foreground">
-                  No tienes clientes registrados. Por favor, agrega un cliente
-                  primero.
+                  No tienes clientes registrados. Por favor, agrega un cliente primero.
                 </p>
                 <button
                   type="button"
@@ -378,8 +427,8 @@ export default function ScheduleReelPage() {
               placeholder="Ingresa un título descriptivo"
               value={title}
               onChange={(e) => {
-                setTitle(e.target.value);
-                setValidationErrors({ ...validationErrors, title: undefined });
+                setTitle(e.target.value)
+                setValidationErrors({ ...validationErrors, title: undefined })
               }}
               required
               error={validationErrors.title}
@@ -391,11 +440,11 @@ export default function ScheduleReelPage() {
               placeholder="Escribe la descripción que se publicará con el reel..."
               value={description}
               onChange={(e) => {
-                setDescription(e.target.value);
+                setDescription(e.target.value)
                 setValidationErrors({
                   ...validationErrors,
                   description: undefined,
-                });
+                })
               }}
               required
               rows={5}
@@ -416,19 +465,14 @@ export default function ScheduleReelPage() {
                   className="hidden"
                   disabled={isLoading}
                 />
-                <label
-                  htmlFor="video"
-                  className="flex flex-col items-center cursor-pointer"
-                >
+                <label htmlFor="video" className="flex flex-col items-center cursor-pointer">
                   <div className="text-muted-foreground mb-2">
                     <Upload className="w-8 h-8" />
                   </div>
                   <p className="text-sm text-center">
                     {videoFile ? (
                       <>
-                        <span className="font-medium text-foreground">
-                          {videoFile.name}
-                        </span>
+                        <span className="font-medium text-foreground">{videoFile.name}</span>
                         <br />
                         <span className="text-xs text-muted-foreground">
                           {(videoFile.size / (1024 * 1024)).toFixed(2)} MB
@@ -438,16 +482,10 @@ export default function ScheduleReelPage() {
                       "Haz clic para seleccionar un video"
                     )}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    MP4, MOV, AVI (máx. 100MB)
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">MP4, MOV, AVI (máx. 100MB)</p>
                 </label>
               </div>
-              {validationErrors.video && (
-                <p className="text-sm text-destructive">
-                  {validationErrors.video}
-                </p>
-              )}
+              {validationErrors.video && <p className="text-sm text-destructive">{validationErrors.video}</p>}
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -456,12 +494,10 @@ export default function ScheduleReelPage() {
                 id="date"
                 label="Fecha de Publicación"
                 value={scheduledDate}
-                onChange={(e) => {
-                  setScheduledDate(e.target.value);
-                  setValidationErrors({ ...validationErrors, date: undefined });
-                }}
+                onChange={(e) => setScheduledDate(e.target.value)}
                 required
                 min={getMinDate()}
+                max={getMaxDate()}
                 leftIcon={<Calendar className="w-4 h-4" />}
                 error={validationErrors.date}
                 disabled={isLoading}
@@ -472,14 +508,18 @@ export default function ScheduleReelPage() {
                 id="time"
                 label="Hora de Publicación"
                 value={scheduledTime}
-                onChange={(e) => {
-                  setScheduledTime(e.target.value);
-                  setValidationErrors({ ...validationErrors, date: undefined });
-                }}
+                onChange={(e) => handleTimeChange(e.target.value)}
+                onFocus={handleTimeFocus}
                 required
+                min={getMinTime()}
+                step="60"
                 leftIcon={<Clock className="w-4 h-4" />}
                 disabled={isLoading}
               />
+            </div>
+
+            <div className="text-xs text-muted-foreground -mt-2">
+              Puedes programar tu reel hasta {MAX_SCHEDULE_DAYS} días en el futuro
             </div>
 
             {isLoading && uploadProgress && (
@@ -520,5 +560,5 @@ export default function ScheduleReelPage() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }
