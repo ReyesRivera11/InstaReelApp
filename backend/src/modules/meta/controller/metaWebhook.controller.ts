@@ -57,7 +57,11 @@ export class MetaWebhookController {
       const value = event.value;
 
       // Only process video posts
-      if (value.item === "video" && value.verb === "add") {
+      if (
+        value.item === "video" &&
+        value.verb === "add" &&
+        value.published === 1
+      ) {
         const reel = await ReelsModel.findReelByContainerId(value.video_id);
 
         if (reel && reel.status === "SCHEDULED") {
