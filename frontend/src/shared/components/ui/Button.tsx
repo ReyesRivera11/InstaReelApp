@@ -85,7 +85,7 @@ export function Button({
 
   return (
     <button
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${widthClass} ${className}`}
+      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${widthClass} ${className} hover:cursor-pointer`}
       {...props}
     >
       {children}

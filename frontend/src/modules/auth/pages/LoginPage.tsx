@@ -137,7 +137,7 @@ export function LoginPage() {
 
             <Button
               type="submit"
-              className="w-full shadow-md hover:shadow-lg"
+              className="w-full shadow-md hover:shadow-lg hover:cursor-pointer"
               disabled={isLoading}
             >
               {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}

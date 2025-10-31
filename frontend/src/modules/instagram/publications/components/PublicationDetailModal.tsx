@@ -93,7 +93,7 @@ export function PublicationDetailModal({
             <p className="text-muted-foreground">{error}</p>
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+              className="px-4 hover:cursor-pointer py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
             >
               Cerrar
             </button>
@@ -477,7 +477,7 @@ export function PublicationDetailModal({
           <div className="flex gap-3 pt-4 border-t border-border">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+              className="flex-1 hover:cursor-pointer px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
             >
               Cerrar
             </button>

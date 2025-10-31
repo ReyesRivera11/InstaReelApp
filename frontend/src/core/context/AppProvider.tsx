@@ -94,6 +94,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const response = await apiClient.deleteClient(id);
     if (response.success) {
       setClients(clients.filter((c) => c.id !== id));
+      
     } else {
       const errorMessage =
         response.message || response.error || "No se pudo eliminar el cliente";

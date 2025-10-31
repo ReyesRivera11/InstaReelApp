@@ -331,7 +331,7 @@ export default function ScheduleReelPage() {
                 </p>
                 <button
                   type="button"
-                  className="text-sm text-purple-600 hover:underline mt-2"
+                  className="text-sm hover:cursor-pointer text-purple-600 hover:underline mt-2"
                   onClick={() => setCurrentPage("clients")}
                 >
                   Ir a Mis Clientes
@@ -504,7 +504,7 @@ export default function ScheduleReelPage() {
               <button
                 type="submit"
                 disabled={clients.length === 0 || isLoading}
-                className=" px-4 py-2 bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="hover:cursor-pointer px-4 py-2 bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isLoading ? (
                   <>

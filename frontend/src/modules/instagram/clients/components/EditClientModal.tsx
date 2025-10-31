@@ -242,7 +242,7 @@ export function EditClientModal({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full sm:w-auto px-4 py-2 bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full hover:cursor-pointer sm:w-auto px-4 py-2 bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? "Guardando..." : "Guardar Cambios"}
             </button>

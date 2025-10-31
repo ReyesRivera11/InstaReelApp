@@ -97,7 +97,15 @@ export function FacebookClientsPage() {
       setIsRefreshing(false);
     }
   };
-
+  const handelDeleteClient = async (id: number) => {
+    try {
+      await deleteClient(id);
+      setSuccess(true);
+      await loadClients();
+    } catch {
+      setError("Error al eliminar el cliente");
+    }
+  };
   useEffect(() => {
     loadClients();
   }, [loadClients]);
@@ -185,7 +193,7 @@ export function FacebookClientsPage() {
           <button
             onClick={() => setCurrentPage(1)}
             disabled={!hasPrev}
-            className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
           >
             <svg
               className="w-4 h-4"
@@ -200,7 +208,7 @@ export function FacebookClientsPage() {
           <button
             onClick={() => setCurrentPage(currentPage - 1)}
             disabled={!hasPrev}
-            className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
           >
             <svg
               className="w-4 h-4"
@@ -216,7 +224,7 @@ export function FacebookClientsPage() {
             <>
               <button
                 onClick={() => setCurrentPage(1)}
-                className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors text-sm"
+                className="px-3 hover:cursor-pointer py-2 border border-border rounded-lg hover:bg-accent transition-colors text-sm"
               >
                 1
               </button>
@@ -230,7 +238,7 @@ export function FacebookClientsPage() {
             <button
               key={page}
               onClick={() => setCurrentPage(page)}
-              className={`px-3 py-2 border rounded-lg text-sm transition-colors ${
+              className={`px-3 py-2 border hover:cursor-pointer rounded-lg text-sm transition-colors ${
                 currentPage === page
                   ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white border-transparent"
                   : "border-border hover:bg-accent"
@@ -247,7 +255,7 @@ export function FacebookClientsPage() {
               )}
               <button
                 onClick={() => setCurrentPage(totalPages)}
-                className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors text-sm"
+                className="px-3 py-2 border hover:cursor-pointer border-border rounded-lg hover:bg-accent transition-colors text-sm"
               >
                 {totalPages}
               </button>
@@ -257,7 +265,7 @@ export function FacebookClientsPage() {
           <button
             onClick={() => setCurrentPage(currentPage + 1)}
             disabled={!hasNext}
-            className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-2 hover:cursor-pointer border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg
               className="w-4 h-4"
@@ -271,7 +279,7 @@ export function FacebookClientsPage() {
           <button
             onClick={() => setCurrentPage(totalPages)}
             disabled={!hasNext}
-            className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 hover:cursor-pointer py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg
               className="w-4 h-4"
@@ -291,16 +299,14 @@ export function FacebookClientsPage() {
   return (
     <>
       {error && (
-        <Alert variant="error">
-          <AlertCircle className="w-5 h-5" />
-          <div>{error}</div>
+        <Alert variant="error" icon={<AlertCircle className="w-5 h-5" />}>
+          {error}
         </Alert>
       )}
 
       {success && (
-        <Alert>
-          <CheckCircle className="w-5 h-5" />
-          <div>¡Operación realizada con éxito!</div>
+        <Alert variant="success" icon={<CheckCircle className="w-5 h-5" />}>
+          Operación realizada con éxito!
         </Alert>
       )}
 
@@ -355,7 +361,7 @@ export function FacebookClientsPage() {
             {searchTerm && (
               <button
                 onClick={handleClearSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute hover:cursor-pointer right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Limpiar búsqueda"
               >
                 <X className="w-4 h-4" />
@@ -386,9 +392,11 @@ export function FacebookClientsPage() {
           </div>
         ) : (
           <div className="bg-card rounded-lg border border-border shadow-sm">
-            <div className="p-6 border-b border-border">
-              <h2 className="text-xl font-semibold">{totalClients} Clientes</h2>
-              <p className="text-sm text-muted-foreground">
+            <div className="px-6 pt-6 pb-4 border-b border-border">
+              <h2 className="text-2xl font-bold text-foreground">
+                {totalClients} Clientes
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
                 Listado completo de todos tus clientes de Facebook
               </p>
             </div>
@@ -403,7 +411,7 @@ export function FacebookClientsPage() {
                     <ClientCard
                       key={client.id}
                       client={client}
-                      onDelete={deleteClient}
+                      onDelete={handelDeleteClient}
                       onEdit={(client) => {
                         setSelectedClient(client);
                         setIsEditModalOpen(true);

@@ -181,7 +181,7 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         <button
           onClick={() => onNavigate("dashboard")}
-          className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all ${
+          className={`w-full hover:cursor-pointer flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all ${
             currentPage === "dashboard"
               ? "bg-primary text-primary-foreground shadow-sm"
               : "hover:bg-sidebar-accent text-sidebar-foreground"
@@ -242,7 +242,7 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
               <div key={network.id}>
                 <button
                   onClick={() => toggleNetwork(network.id)}
-                  className={`w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg transition-all ${
+                  className={`w-full hover:cursor-pointer flex items-center justify-between gap-3 px-4 py-2.5 rounded-lg transition-all ${
                     isNetworkActive
                       ? "bg-sidebar-accent text-sidebar-foreground"
                       : "hover:bg-sidebar-accent/50 text-sidebar-foreground"
@@ -277,7 +277,7 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
                         <button
                           key={subItem.id}
                           onClick={() => onNavigate(subItem.id)}
-                          className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all ${
+                          className={`w-full hover:cursor-pointer text-left px-3 py-2 rounded-md text-sm transition-all ${
                             isActive
                               ? "bg-sidebar-accent text-sidebar-foreground font-semibold"
                               : "text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
@@ -298,7 +298,7 @@ export function Sidebar({ currentPage, onNavigate, onLogout }: SidebarProps) {
       <div className="p-4 border-t border-sidebar-border">
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-destructive/10 text-destructive transition-all font-medium"
+          className="w-full hover:cursor-pointer flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-destructive/10 text-destructive transition-all font-medium"
         >
           <svg
             className="w-5 h-5"

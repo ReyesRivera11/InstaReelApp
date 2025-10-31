@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Card, Modal, Button, Alert } from "../../../../shared/components/ui";
 import type { ClientDB } from "../../../../core/types";
-import { Edit, Trash, CheckCircle2, XCircle } from "lucide-react";
+import { Edit, Trash, CheckCircle, AlertCircle } from "lucide-react";
 
 interface ClientCardProps {
   client: ClientDB;
@@ -82,14 +82,14 @@ export function ClientCard({ client, onDelete, onEdit }: ClientCardProps) {
           <div className="flex gap-2 flex-shrink-0">
             <button
               onClick={() => onEdit(client)}
-              className="p-2 hover:bg-blue-50 rounded-lg transition-colors group"
+              className="p-2 hover:bg-blue-50 rounded-lg transition-colors group hover:cursor-pointer"
               aria-label="Editar cliente"
             >
               <Edit className="w-4 h-4 text-gray-500 group-hover:text-blue-600 transition-colors" />
             </button>
             <button
               onClick={handleDeleteClick}
-              className="p-2 hover:bg-red-50 rounded-lg transition-colors group"
+              className="p-2 hover:bg-red-50 rounded-lg transition-colors group hover:cursor-pointer"
               aria-label="Eliminar cliente"
             >
               <Trash className="w-4 h-4 text-gray-500 group-hover:text-red-600 transition-colors" />
@@ -124,18 +124,13 @@ export function ClientCard({ client, onDelete, onEdit }: ClientCardProps) {
       </Modal>
 
       {showSuccessMessage && (
-        <Alert variant="success" icon={<CheckCircle2 className="w-5 h-5" />}>
-          <div>
-            <p className="font-semibold">Cliente eliminado</p>
-            <p className="text-sm opacity-90">
-              El cliente se eliminó correctamente
-            </p>
-          </div>
+        <Alert variant="success" icon={<CheckCircle className="w-5 h-5" />}>
+          El cliente se eliminó correctamente
         </Alert>
       )}
 
       {showErrorMessage && (
-        <Alert variant="error" icon={<XCircle className="w-5 h-5" />}>
+        <Alert variant="error" icon={<AlertCircle className="w-5 h-5" />}>
           <div>
             <p className="font-semibold">Error al eliminar</p>
             <p className="text-sm opacity-90">{errorMessage}</p>

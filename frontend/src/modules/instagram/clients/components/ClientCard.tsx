@@ -1,6 +1,12 @@
 "use client";
 
-import { Trash2, Instagram, Pencil, CheckCircle2, XCircle } from "lucide-react";
+import {
+  Trash2,
+  Instagram,
+  Pencil,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -130,18 +136,13 @@ export function ClientCard({ client, onDelete, onEdit }: ClientCardProps) {
       </Modal>
 
       {showSuccessMessage && (
-        <Alert variant="success" icon={<CheckCircle2 className="w-5 h-5" />}>
-          <div>
-            <p className="font-semibold">Cliente eliminado</p>
-            <p className="text-sm opacity-90">
-              El cliente se eliminó correctamente
-            </p>
-          </div>
+        <Alert variant="success" icon={<CheckCircle className="w-5 h-5" />}>
+          El cliente se eliminó correctamente
         </Alert>
       )}
 
       {showErrorMessage && (
-        <Alert variant="error" icon={<XCircle className="w-5 h-5" />}>
+        <Alert variant="error" icon={<AlertCircle className="w-5 h-5" />}>
           <div>
             <p className="font-semibold">Error al eliminar</p>
             <p className="text-sm opacity-90">{errorMessage}</p>

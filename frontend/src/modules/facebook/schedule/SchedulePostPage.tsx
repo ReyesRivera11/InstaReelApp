@@ -450,7 +450,7 @@ export default function ScheduleFacebookReelPage() {
                 </p>
                 <button
                   type="button"
-                  className="text-sm text-[#1877F2] hover:underline mt-2"
+                  className="text-sm hover:cursor-pointer text-[#1877F2] hover:underline mt-2"
                   onClick={() => setCurrentPage("facebook-clients")}
                 >
                   Ir a Mis Páginas
@@ -666,7 +666,7 @@ export default function ScheduleFacebookReelPage() {
               <button
                 type="submit"
                 disabled={clients.length === 0 || isLoading}
-                className="px-4 py-2 bg-[#1877F2] hover:bg-[#166FE5] text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="px-4 hover:cursor-pointer py-2 bg-[#1877F2] hover:bg-[#166FE5] text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isLoading ? (
                   <>

@@ -322,7 +322,7 @@ const PublicationsPage = () => {
           <button
             onClick={() => setCurrentPage(1)}
             disabled={!hasPrev}
-            className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 hover:cursor-pointer py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg
               className="w-4 h-4"
@@ -337,7 +337,7 @@ const PublicationsPage = () => {
           <button
             onClick={() => setCurrentPage(currentPage - 1)}
             disabled={!hasPrev}
-            className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 hover:cursor-pointer py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg
               className="w-4 h-4"
@@ -353,7 +353,7 @@ const PublicationsPage = () => {
             <>
               <button
                 onClick={() => setCurrentPage(1)}
-                className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors text-sm"
+                className="px-3 py-2 hover:cursor-pointer border border-border rounded-lg hover:bg-accent transition-colors text-sm"
               >
                 1
               </button>
@@ -367,7 +367,7 @@ const PublicationsPage = () => {
             <button
               key={page}
               onClick={() => setCurrentPage(page)}
-              className={`px-3 py-2 border rounded-lg text-sm transition-colors ${
+              className={`px-3 hover:cursor-pointer py-2 border rounded-lg text-sm transition-colors ${
                 currentPage === page
                   ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white border-transparent"
                   : "border-border hover:bg-accent"
@@ -384,7 +384,7 @@ const PublicationsPage = () => {
               )}
               <button
                 onClick={() => setCurrentPage(totalPages)}
-                className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors text-sm"
+                className="px-3 hover:cursor-pointer py-2 border border-border rounded-lg hover:bg-accent transition-colors text-sm"
               >
                 {totalPages}
               </button>
@@ -394,7 +394,7 @@ const PublicationsPage = () => {
           <button
             onClick={() => setCurrentPage(currentPage + 1)}
             disabled={!hasNext}
-            className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 hover:cursor-pointer py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg
               className="w-4 h-4"
@@ -408,7 +408,7 @@ const PublicationsPage = () => {
           <button
             onClick={() => setCurrentPage(totalPages)}
             disabled={!hasNext}
-            className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 hover:cursor-pointer py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg
               className="w-4 h-4"
@@ -519,7 +519,7 @@ const PublicationsPage = () => {
             <div className="flex gap-2 bg-muted p-1 rounded-lg">
               <button
                 onClick={() => setViewMode("table")}
-                className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors ${
+                className={`px-3 hover:cursor-pointer py-2 rounded-md text-sm flex items-center gap-2 transition-colors ${
                   viewMode === "table"
                     ? "bg-background shadow-sm"
                     : "hover:bg-background/50"
@@ -540,7 +540,7 @@ const PublicationsPage = () => {
               </button>
               <button
                 onClick={() => setViewMode("calendar")}
-                className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors ${
+                className={`px-3 hover:cursor-pointer py-2 rounded-md text-sm flex items-center gap-2 transition-colors ${
                   viewMode === "calendar"
                     ? "bg-background shadow-sm"
                     : "hover:bg-background/50"
@@ -592,7 +592,7 @@ const PublicationsPage = () => {
               {searchTerm && (
                 <button
                   onClick={handleClearSearch}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute right-3 hover:cursor-pointer top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   aria-label="Limpiar búsqueda"
                 >
                   <X className="w-4 h-4" />
@@ -741,7 +741,7 @@ const PublicationsPage = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={previousMonth}
-                        className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors"
+                        className="px-3 hover:cursor-pointer py-2 border border-border rounded-lg hover:bg-accent transition-colors"
                       >
                         <svg
                           className="w-4 h-4"
@@ -754,7 +754,7 @@ const PublicationsPage = () => {
                       </button>
                       <button
                         onClick={nextMonth}
-                        className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors"
+                        className="px-3 hover:cursor-pointer py-2 border border-border rounded-lg hover:bg-accent transition-colors"
                       >
                         <svg
                           className="w-4 h-4"
