@@ -5,8 +5,8 @@ export class DashboardModel {
     return await prisma.client.count();
   }
 
-  static async getScheduledPublicationsCount(): Promise<number> {
-    return await prisma.instagram_reels.count({
+  static async getScheduledReelsCount(): Promise<number> {
+    return await prisma.reels.count({
       where: { 
         status: "SCHEDULED",
         scheduled_date: { gte: new Date() }
@@ -14,20 +14,20 @@ export class DashboardModel {
     });
   }
 
-  static async getCompletedPublicationsCount(): Promise<number> {
-    return await prisma.instagram_reels.count({
+  static async getCompletedReelsCount(): Promise<number> {
+    return await prisma.reels.count({
       where: { status: "PUBLISHED" }
     });
   }
 
-  static async getTodayPublicationsCount(): Promise<number> {
+  static async getTodayReelsCount(): Promise<number> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    return await prisma.instagram_reels.count({
+    return await prisma.reels.count({
       where: {
         status: "PUBLISHED",
         scheduled_date: {
@@ -38,8 +38,8 @@ export class DashboardModel {
     });
   }
 
-  static async getRecentPublications(limit: number = 5) {
-    return await prisma.instagram_reels.findMany({
+  static async getRecentReels(limit: number = 5) {
+    return await prisma.reels.findMany({
       take: limit,
       orderBy: { created_at: 'desc' },
       include: {

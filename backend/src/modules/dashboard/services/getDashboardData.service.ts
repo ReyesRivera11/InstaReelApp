@@ -3,38 +3,38 @@ import { DashboardModel } from "../models/dashboard.controller";
 export const getDashboardDataService = async () => {
   const [
     activeClients,
-    scheduledPublications,
-    completedPublications,
-    todayPublications,
-    recentPublications,
+    scheduledReels,
+    completedReels,
+    todayReels,
+    recentReels,
   ] = await Promise.all([
     DashboardModel.getActiveClientsCount(),
-    DashboardModel.getScheduledPublicationsCount(),
-    DashboardModel.getCompletedPublicationsCount(),
-    DashboardModel.getTodayPublicationsCount(),
-    DashboardModel.getRecentPublications(5),
+    DashboardModel.getScheduledReelsCount(),
+    DashboardModel.getCompletedReelsCount(),
+    DashboardModel.getTodayReelsCount(),
+    DashboardModel.getRecentReels(5),
   ]);
 
   const stats = {
     activeClients,
-    scheduledPublications,
-    completedPublications,
-    todayPublications,
+    scheduledReels,
+    completedReels,
+    todayReels,
   };
 
-  const formattedPublications = recentPublications.map((pub) => ({
-    id: pub.id,
-    clientName: pub.client.name,
-    scheduledFor: pub.scheduled_date,
-    title: pub.title,
-    description: pub.description,
-    status: pub.status as "SCHEDULED" | "PUBLISHED",
-    mediaUrl: pub.video_url || undefined,
-    created_at: pub.created_at,
+  const formattedReels = recentReels.map((reel) => ({
+    id: reel.id,
+    clientName: reel.client.name,
+    scheduledFor: reel.scheduled_date,
+    title: reel.title,
+    description: reel.description,
+    status: reel.status as "SCHEDULED" | "PUBLISHED",
+    mediaUrl: reel.video_url || undefined,
+    created_at: reel.created_at,
   }));
 
   return {
     stats,
-    recentPublications: formattedPublications,
+    recentReels: formattedReels,
   };
 };
