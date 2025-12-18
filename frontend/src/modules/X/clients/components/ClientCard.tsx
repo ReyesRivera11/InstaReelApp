@@ -1,23 +1,16 @@
 "use client";
 
-import {
-  Trash2,
-  Instagram,
-  Pencil,
-  CheckCircle,
-  AlertCircle,
-} from "lucide-react";
 import { useState } from "react";
-
-import {
-  Alert,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  Modal,
-} from "../../../../shared/components/ui";
+import { Trash2, Pencil, CheckCircle, AlertCircle } from "lucide-react";
+import { Alert, Button, Card, CardContent, CardHeader, Modal } from "../../../../shared/components/ui";
 import type { ClientDB } from "../../../../core/types";
+
+// Logo 
+const XLogo = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
 
 interface ClientCardProps {
   client: ClientDB;
@@ -42,20 +35,14 @@ export function ClientCard({ client, onDelete, onEdit }: ClientCardProps) {
       await onDelete(client.id);
       setShowDeleteConfirm(false);
       setShowSuccessMessage(true);
-      setTimeout(() => {
-        setShowSuccessMessage(false);
-      }, 3000);
+      setTimeout(() => setShowSuccessMessage(false), 4000);
     } catch (error) {
       setShowDeleteConfirm(false);
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "No se pudo eliminar el cliente"
+        error instanceof Error ? error.message : "No se pudo eliminar la cuenta"
       );
       setShowErrorMessage(true);
-      setTimeout(() => {
-        setShowErrorMessage(false);
-      }, 5000);
+      setTimeout(() => setShowErrorMessage(false), 6000);
     } finally {
       setIsDeleting(false);
     }
@@ -67,57 +54,67 @@ export function ClientCard({ client, onDelete, onEdit }: ClientCardProps) {
 
   return (
     <>
-      <Card className="w-full hover:shadow-md transition-shadow">
+      <Card className="w-full hover:shadow-lg transition-shadow duration-300 border-border">
         <CardHeader className="p-4 sm:p-6">
-          <div className="flex items-start gap-3 sm:gap-4">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 text-white">
-              <Instagram className="w-6 h-6 sm:w-7 sm:h-7" />
+          <div className="flex items-start gap-4">
+            {/* Logo X */}
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-black dark:bg-white rounded-full flex items-center justify-center flex-shrink-0 text-white dark:text-black border border-border">
+              <XLogo className="w-8 h-8 sm:w-10 sm:h-10" />
             </div>
+
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-foreground text-base sm:text-lg truncate">
+              <h3 className="font-semibold text-foreground text-lg truncate">
                 {client.name}
               </h3>
-              <p className="text-sm text-muted-foreground truncate">
+              <p className="text-sm text-muted-foreground truncate mt-1">
                 @{client.username}
               </p>
+              {client.description && (
+                <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                  {client.description}
+                </p>
+              )}
             </div>
-            <div className="flex gap-1 sm:gap-2 flex-shrink-0">
+
+              <div className="flex gap-2 flex-shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onEdit(client)}
-                className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 h-8 w-8 sm:h-9 sm:w-9"
+                className="h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-accent"
               >
-                <Pencil className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Pencil className="w-4 h-4" />
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleDeleteClick}
-                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 h-8 w-8 sm:h-9 sm:w-9"
+                className="h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10"
               >
-                <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Trash2 className="w-4 h-4" />
               </Button>
             </div>
           </div>
         </CardHeader>
+
         {client.description && (
-          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-            <p className="text-sm text-muted-foreground line-clamp-2">
+          <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6 pt-0">
+            <p className="text-sm text-muted-foreground line-clamp-3">
               {client.description}
             </p>
           </CardContent>
         )}
       </Card>
 
+      {/* Modal de confirmación de eliminación */}
       <Modal
         isOpen={showDeleteConfirm}
         onClose={handleCancelDelete}
-        title="¿Estás seguro?"
-        description={`Esta acción no se puede deshacer. Se eliminará permanentemente el cliente ${client.name} y todos sus datos asociados.`}
+        title="¿Eliminar cuenta?"
+        description={`Esta acción eliminará permanentemente la cuenta "${client.name}" (@${client.username}) y todos sus datos asociados. No se puede deshacer.`}
         maxWidth="sm"
       >
-        <div className="flex gap-3 justify-end">
+        <div className="flex gap-3 justify-end mt-6">
           <Button
             variant="outline"
             onClick={handleCancelDelete}
@@ -130,14 +127,15 @@ export function ClientCard({ client, onDelete, onEdit }: ClientCardProps) {
             onClick={handleConfirmDelete}
             disabled={isDeleting}
           >
-            {isDeleting ? "Eliminando..." : "Eliminar"}
+            {isDeleting ? "Eliminando..." : "Eliminar cuenta"}
           </Button>
         </div>
       </Modal>
 
+      {/* Alertas flotantes */}
       {showSuccessMessage && (
         <Alert variant="success" icon={<CheckCircle className="w-5 h-5" />}>
-          El cliente se eliminó correctamente
+          La cuenta se eliminó correctamente
         </Alert>
       )}
 
@@ -145,7 +143,7 @@ export function ClientCard({ client, onDelete, onEdit }: ClientCardProps) {
         <Alert variant="error" icon={<AlertCircle className="w-5 h-5" />}>
           <div>
             <p className="font-semibold">Error al eliminar</p>
-            <p className="text-sm opacity-90">{errorMessage}</p>
+            <p className="text-sm opacity-90 mt-1">{errorMessage}</p>
           </div>
         </Alert>
       )}

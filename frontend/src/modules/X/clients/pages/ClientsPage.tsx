@@ -1,11 +1,12 @@
 "use client";
+
 import { useState, useEffect, useCallback } from "react";
-import { Plus } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import { ClientCard } from "../components/ClientCard";
 import { AddClientModal } from "../components/AddClientModal";
-import { EditClientModal } from "../components/EditClientModal";
+import { EditClientModal } from "../components/EditClientModal";  
 import { useApp } from "../../../../shared/hooks/useApp";
-import { AlertCircle, CheckCircle, X, RefreshCw } from "lucide-react";
+import { AlertCircle, CheckCircle, X } from "lucide-react";
 import type {
   ClientDB,
   PaginatedClients,
@@ -14,7 +15,14 @@ import type {
 import { apiClient } from "../../../../shared/services/api/reels/apiClients";
 import { Alert, Button } from "../../../../shared/components/ui";
 
-export function ClientsPage() {
+// Logo 
+const XLogo = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
+
+export function XClientsPage() {
   const {
     addClient,
     deleteClient,
@@ -43,14 +51,14 @@ export function ClientsPage() {
 
   useEffect(() => {
     if (error) {
-      const timer = setTimeout(() => setError(null), 3000);
+      const timer = setTimeout(() => setError(null), 4000);
       return () => clearTimeout(timer);
     }
   }, [error]);
 
   useEffect(() => {
     if (success) {
-      const timer = setTimeout(() => setSuccess(false), 3000);
+      const timer = setTimeout(() => setSuccess(false), 4000);
       return () => clearTimeout(timer);
     }
   }, [success]);
@@ -59,7 +67,6 @@ export function ClientsPage() {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
     }, 500);
-
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
@@ -71,7 +78,7 @@ export function ClientsPage() {
       const response: PaginatedClients = await apiClient.getClients({
         page: currentPage,
         limit: itemsPerPage,
-        social_identity: "INSTAGRAM",
+        social_identity: "X",
         search: debouncedSearchTerm || undefined,
       });
 
@@ -83,33 +90,33 @@ export function ClientsPage() {
         setHasPrev(response.hasPrev);
       } else {
         setClients([]);
-        setError("Error al cargar los clientes");
+        setError("Error al cargar las cuentas");
       }
     } catch (err) {
       setClients([]);
-      setError(
-        err instanceof Error ? err.message : "Error al cargar los clientes"
-      );
+      setError(err instanceof Error ? err.message : "Error al cargar las cuentas");
     } finally {
       setIsLoading(false);
     }
   }, [currentPage, debouncedSearchTerm]);
-  const handelDeleteClient = async (id: number) => {
+
+  const handleDeleteClient = async (id: number) => {
     try {
       await deleteClient(id);
       setSuccess(true);
       await loadClients();
     } catch {
-      setError("Error al eliminar el cliente");
+      setError("Error al eliminar la cuenta");
     }
   };
+
   const handleRefresh = async () => {
     try {
       setIsRefreshing(true);
       await loadClients();
       setSuccess(true);
     } catch {
-      setError("Error al recargar los clientes");
+      setError("Error al recargar las cuentas");
     } finally {
       setIsRefreshing(false);
     }
@@ -125,14 +132,13 @@ export function ClientsPage() {
     } else {
       loadClients();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchTerm]);
 
   useEffect(() => {
     if (oauthCompleted) {
       setIsModalOpen(false);
       setSuccess(true);
-      loadClients().catch(() => setError("Error al recargar clientes."));
+      loadClients().catch(() => setError("Error al recargar cuentas"));
       setOauthCompleted(false);
     }
   }, [oauthCompleted, loadClients, setOauthCompleted]);
@@ -148,7 +154,7 @@ export function ClientsPage() {
       setIsModalOpen(false);
       await loadClients();
     } catch {
-      setError("Error al agregar el cliente");
+      setError("Error al conectar la cuenta");
     }
   };
 
@@ -160,17 +166,13 @@ export function ClientsPage() {
       setIsEditModalOpen(false);
       setSelectedClient(null);
     } catch {
-      setError("Error al actualizar el cliente");
+      setError("Error al actualizar la cuenta");
     }
   };
 
   const handleCloseModal = async () => {
     setIsModalOpen(false);
-    try {
-      await loadClients();
-    } catch {
-      setError("Error al recargar clientes.");
-    }
+    await loadClients();
   };
 
   const handleClearSearch = () => {
@@ -196,20 +198,15 @@ export function ClientsPage() {
     return (
       <div className="flex items-center justify-between px-6 py-4 border-t border-border">
         <div className="text-sm text-muted-foreground">
-          Mostrando {clients.length} de {totalClients} clientes
+          Mostrando {clients.length} de {totalClients} cuentas
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setCurrentPage(1)}
             disabled={!hasPrev}
-            className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
+            className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <polyline points="11 17 6 12 11 7" strokeWidth="2" />
               <polyline points="18 17 13 12 18 7" strokeWidth="2" />
             </svg>
@@ -217,29 +214,19 @@ export function ClientsPage() {
           <button
             onClick={() => setCurrentPage(currentPage - 1)}
             disabled={!hasPrev}
-            className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:cursor-pointer"
+            className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <polyline points="15 18 9 12 15 6" strokeWidth="2" />
             </svg>
           </button>
 
           {startPage > 1 && (
             <>
-              <button
-                onClick={() => setCurrentPage(1)}
-                className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors text-sm hover:cursor-pointer"
-              >
+              <button onClick={() => setCurrentPage(1)} className="px-3 py-2 border border-border rounded-lg hover:bg-accent text-sm">
                 1
               </button>
-              {startPage > 2 && (
-                <span className="px-2 text-muted-foreground">...</span>
-              )}
+              {startPage > 2 && <span className="px-2 text-muted-foreground">...</span>}
             </>
           )}
 
@@ -247,9 +234,9 @@ export function ClientsPage() {
             <button
               key={page}
               onClick={() => setCurrentPage(page)}
-              className={`px-3 py-2 border rounded-lg hover:cursor-pointer text-sm transition-colors ${
+              className={`px-3 py-2 border rounded-lg text-sm transition-colors ${
                 currentPage === page
-                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white border-transparent"
+                  ? "bg-black text-white border-black"
                   : "border-border hover:bg-accent"
               }`}
             >
@@ -259,13 +246,8 @@ export function ClientsPage() {
 
           {endPage < totalPages && (
             <>
-              {endPage < totalPages - 1 && (
-                <span className="px-2 text-muted-foreground">...</span>
-              )}
-              <button
-                onClick={() => setCurrentPage(totalPages)}
-                className="px-3 py-2 hover:cursor-pointer border border-border rounded-lg hover:bg-accent transition-colors text-sm"
-              >
+              {endPage < totalPages - 1 && <span className="px-2 text-muted-foreground">...</span>}
+              <button onClick={() => setCurrentPage(totalPages)} className="px-3 py-2 border border-border rounded-lg hover:bg-accent text-sm">
                 {totalPages}
               </button>
             </>
@@ -274,28 +256,18 @@ export function ClientsPage() {
           <button
             onClick={() => setCurrentPage(currentPage + 1)}
             disabled={!hasNext}
-            className="px-3 py-2 hover:cursor-pointer border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <polyline points="9 18 15 12 9 6" strokeWidth="2" />
             </svg>
           </button>
           <button
             onClick={() => setCurrentPage(totalPages)}
             disabled={!hasNext}
-            className="px-3 py-2 hover:cursor-pointer border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <polyline points="13 17 18 12 13 7" strokeWidth="2" />
               <polyline points="6 17 11 12 6 7" strokeWidth="2" />
             </svg>
@@ -321,33 +293,32 @@ export function ClientsPage() {
 
       <div className="space-y-6 p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-              Mis Clientes
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Gestiona las cuentas de Instagram de tus clientes
-            </p>
+          <div className="flex items-center gap-4">
+            <XLogo className="w-12 h-12" />
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                Mis Cuentas de X
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Gestiona las cuentas de X conectadas
+              </p>
+            </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <Button
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="w-full sm:w-auto bg-transparent"
-              variant="outline"
+              className="bg-black hover:bg-gray-800 text-white"
             >
-              <RefreshCw
-                className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
-              />
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
               {isRefreshing ? "Recargando..." : "Recargar"}
             </Button>
             <Button
               onClick={() => setIsModalOpen(true)}
-              className="w-full sm:w-auto"
-              variant="gradient"
+              className="bg-black hover:bg-gray-800 text-white"
             >
               <Plus className="w-4 h-4" />
-              Agregar Cliente
+              Conectar Cuenta
             </Button>
           </div>
         </div>
@@ -364,16 +335,15 @@ export function ClientsPage() {
               <path d="m21 21-4.35-4.35" strokeWidth="2" />
             </svg>
             <input
-              placeholder="Buscar por nombre o username..."
+              placeholder="Buscar por nombre o @username..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-10 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full pl-10 pr-10 py-2 bg-input-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
             />
             {searchTerm && (
               <button
                 onClick={handleClearSearch}
-                className="absolute hover:cursor-pointer right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Limpiar búsqueda"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -397,8 +367,8 @@ export function ClientsPage() {
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-center space-y-3">
-              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-              <p className="text-muted-foreground">Cargando clientes...</p>
+              <div className="w-12 h-12 border-4 border-black border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-muted-foreground">Cargando cuentas...</p>
             </div>
           </div>
         ) : (
@@ -406,43 +376,29 @@ export function ClientsPage() {
             {clients.length > 0 && (
               <div className="px-6 pt-6 pb-4 border-b border-border">
                 <h2 className="text-2xl font-bold text-foreground">
-                  {totalClients} {totalClients === 1 ? "Cliente" : "Clientes"}
+                  {totalClients} {totalClients === 1 ? "Cuenta" : "Cuentas"}
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Listado completo de todos tus clientes de Instagram
+                  Listado completo de tus cuentas conectadas en X
                 </p>
               </div>
             )}
             <div className="p-6">
               {clients.length === 0 ? (
                 <div className="text-center py-12">
-                  <svg
-                    className="w-12 h-12 text-muted-foreground mx-auto mb-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
-                      strokeWidth="2"
-                    />
-                    <circle cx="9" cy="7" r="4" strokeWidth="2" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" strokeWidth="2" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" strokeWidth="2" />
-                  </svg>
+                  <XLogo className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground">
                     {searchTerm
-                      ? "No se encontraron clientes con los filtros aplicados"
-                      : "No hay clientes aún"}
+                      ? "No se encontraron cuentas con la búsqueda"
+                      : "No tienes cuentas conectadas aún"}
                   </p>
                   {!searchTerm && (
                     <Button
                       onClick={() => setIsModalOpen(true)}
-                      className="mt-4"
-                      variant="gradient"
+                      className="mt-4 bg-black hover:bg-gray-800 text-white"
                     >
                       <Plus className="w-4 h-4" />
-                      Agregar tu primer cliente
+                      Conectar tu primera cuenta
                     </Button>
                   )}
                 </div>
@@ -452,7 +408,7 @@ export function ClientsPage() {
                     <ClientCard
                       key={client.id}
                       client={client}
-                      onDelete={handelDeleteClient}
+                      onDelete={handleDeleteClient}
                       onEdit={(client) => {
                         setSelectedClient(client);
                         setIsEditModalOpen(true);

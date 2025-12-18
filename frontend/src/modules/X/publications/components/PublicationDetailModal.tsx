@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Reels } from "../../../../core/types";
-import { appReelss } from "../../../../shared/services/api/reels/apiPublications";
+import type { Reels } from "../../../../core/types";  
+import { appReelss } from "../../../../shared/services/api/reels/apiPublications";  
 
 interface PublicationDetailModalProps {
   publicationId: number | null;
@@ -11,12 +11,18 @@ interface PublicationDetailModalProps {
   onUpdate?: () => void;
 }
 
+const XLogo = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
+
 export function PublicationDetailModal({
   publicationId,
   isOpen,
   onClose,
 }: PublicationDetailModalProps) {
-  const [publication, setPublication] = useState<Reels | null>(null);
+  const [publication, setPublication] = useState<Reels | null>(null);  // Cambiar  despues
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,7 +39,7 @@ export function PublicationDetailModal({
 
         const response = await appReelss.getReelsById(publicationId.toString());
         console.log(response);
-        if (response.reel) {
+        if (response.reel) {  // Cambiar
           setPublication(response.reel);
         } else {
           setError(response.error || "Error al cargar la publicación");
@@ -93,7 +99,7 @@ export function PublicationDetailModal({
             <p className="text-muted-foreground">{error}</p>
             <button
               onClick={onClose}
-              className="px-4 hover:cursor-pointer py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+              className="px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-lg transition-colors font-medium"
             >
               Cerrar
             </button>
@@ -109,7 +115,7 @@ export function PublicationDetailModal({
     return pub.scheduled_date ?? pub.scheduledDate ?? undefined;
   };
 
-  const getVideoUrl = (pub: Reels): string | undefined => {
+  const getMediaUrl = (pub: Reels): string | undefined => {
     return pub.media_url ?? pub.video_url ?? undefined;
   };
 
@@ -139,19 +145,19 @@ export function PublicationDetailModal({
   };
 
   const scheduledDate = getScheduledDate(publication);
-  const videoUrl = getVideoUrl(publication);
+  const mediaUrl = getMediaUrl(publication);
 
-  const getInstagramEmbedUrl = (url?: string) => {
+  const getXEmbedUrl = (url?: string) => {
     if (!url) return null;
 
-    const reelMatch = url.match(/instagram\.com\/reel\/([A-Za-z0-9_-]+)/);
-    if (reelMatch && reelMatch[1]) {
-      return `https://www.instagram.com/reel/${reelMatch[1]}/embed`;
+    const postMatch = url.match(/x\.com\/.*\/status\/(\d+)/) || url.match(/twitter\.com\/.*\/status\/(\d+)/);
+    if (postMatch && postMatch[1]) {
+      return `https://twitframe.com/show?url=https://x.com/i/status/${postMatch[1]}`;
     }
     return null;
   };
 
-  const embedUrl = getInstagramEmbedUrl(videoUrl);
+  const embedUrl = getXEmbedUrl(mediaUrl);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -196,11 +202,14 @@ export function PublicationDetailModal({
       >
         <div className="p-6 border-b border-border">
           <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold">{publication.title}</h2>
-              <p className="text-sm text-muted-foreground mt-2">
-                Detalles completos de la publicación programada
-              </p>
+            <div className="flex-1 flex items-center gap-3">
+              <XLogo className="w-8 h-8" />
+              <div>
+                <h2 className="text-2xl font-bold">{publication.title}</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Detalles completos de la publicación programada en X
+                </p>
+              </div>
             </div>
             {getStatusBadge(publication.status)}
           </div>
@@ -208,43 +217,16 @@ export function PublicationDetailModal({
 
         <div className="p-6 space-y-6">
           <div className="flex items-start gap-4 p-4 bg-muted/50 rounded-lg">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center flex-shrink-0">
-              <svg
-                className="w-6 h-6 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <rect
-                  x="2"
-                  y="2"
-                  width="20"
-                  height="20"
-                  rx="5"
-                  ry="5"
-                  strokeWidth="2"
-                />
-                <path
-                  d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"
-                  strokeWidth="2"
-                />
-              </svg>
+            <div className="w-12 h-12 bg-gradient-to-br from-black to-gray-900 rounded-full flex items-center justify-center flex-shrink-0 text-white">
+              <XLogo className="w-6 h-6" />
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <svg
-                  className="w-4 h-4 text-muted-foreground"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
-                    strokeWidth="2"
-                  />
+                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" strokeWidth="2" />
                   <circle cx="12" cy="7" r="4" strokeWidth="2" />
                 </svg>
-                <span className="text-sm text-muted-foreground">Cliente</span>
+                <span className="text-sm text-muted-foreground">Cuenta</span>
               </div>
               <p>{getClientName()}</p>
             </div>
@@ -252,57 +234,29 @@ export function PublicationDetailModal({
 
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <svg
-                className="w-4 h-4 text-muted-foreground"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <polygon points="23 7 16 12 23 17 23 7" strokeWidth="2" />
-                <rect
-                  x="1"
-                  y="5"
-                  width="15"
-                  height="14"
-                  rx="2"
-                  ry="2"
-                  strokeWidth="2"
-                />
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2" strokeWidth="2" />
               </svg>
-              <span className="text-sm text-muted-foreground">
-                Video del Reel
-              </span>
+              <span className="text-sm text-muted-foreground">Media del Post (si aplica)</span>
             </div>
-            {videoUrl ? (
+            {mediaUrl ? (
               <div className="space-y-4">
                 {embedUrl ? (
-                  <div className="aspect-[9/16] max-w-sm mx-auto rounded-lg overflow-hidden border-2 border-purple-200 shadow-lg">
-                    <iframe
-                      src={embedUrl}
-                      className="w-full h-full"
-                      frameBorder="0"
-                      scrolling="no"
-                      allowTransparency={true}
-                      allow="encrypted-media"
-                    />
+                  <div className="aspect-[16/9] max-w-md mx-auto rounded-lg overflow-hidden border-2 border-black shadow-lg">
+                    <iframe src={embedUrl} className="w-full h-full" frameBorder="0" scrolling="no" allowTransparency={true} allow="encrypted-media" />
                   </div>
                 ) : (
-                  <div className="aspect-[9/16] max-w-sm mx-auto bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center border-2 border-purple-200 overflow-hidden">
+                  <div className="aspect-[16/9] max-w-md mx-auto bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center border-2 border-black overflow-hidden">
                     <div className="text-center p-6">
-                      <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg
-                          className="w-8 h-8 text-white"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <polygon points="5 3 19 12 5 21 5 3" />
-                        </svg>
+                      <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
+                        <XLogo className="w-8 h-8 text-white" />
                       </div>
-                      <p className="text-sm text-purple-700 font-medium mb-2">
-                        Vista previa del Reel
+                      <p className="text-sm text-black font-medium mb-2">
+                        Vista previa del Post
                       </p>
-                      <p className="text-xs text-purple-600">
-                        Haz clic en el botón para ver en Instagram
+                      <p className="text-xs text-gray-600">
+                        Haz clic en el botón para ver en X
                       </p>
                     </div>
                   </div>
@@ -310,92 +264,29 @@ export function PublicationDetailModal({
 
                 <div className="flex justify-center">
                   <a
-                    href={videoUrl}
+                    href={mediaUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-md hover:shadow-lg font-medium"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-all shadow-md hover:shadow-lg font-medium"
                   >
-                    <svg
-                      className="w-5 h-5"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <rect
-                        x="2"
-                        y="2"
-                        width="20"
-                        height="20"
-                        rx="5"
-                        ry="5"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      />
-                      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                      <line
-                        x1="17.5"
-                        y1="6.5"
-                        x2="17.51"
-                        y2="6.5"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    Ver Reel en Instagram
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <polyline
-                        points="15 3 21 3 21 9"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <line
-                        x1="10"
-                        y1="14"
-                        x2="21"
-                        y2="3"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
+                    <XLogo className="w-5 h-5" />
+                    Ver Post en X
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <polyline points="15 3 21 3 21 9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <line x1="10" y1="14" x2="21" y2="3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </a>
                 </div>
               </div>
             ) : (
-              <div className="aspect-[9/16] max-w-sm mx-auto bg-muted rounded-lg flex items-center justify-center">
+              <div className="aspect-[16/9] max-w-md mx-auto bg-muted rounded-lg flex items-center justify-center">
                 <div className="text-center">
-                  <svg
-                    className="w-12 h-12 text-muted-foreground mx-auto mb-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className="w-12 h-12 text-muted-foreground mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <polygon points="23 7 16 12 23 17 23 7" strokeWidth="2" />
-                    <rect
-                      x="1"
-                      y="5"
-                      width="15"
-                      height="14"
-                      rx="2"
-                      ry="2"
-                      strokeWidth="2"
-                    />
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" strokeWidth="2" />
                   </svg>
-                  <p className="text-sm text-muted-foreground">
-                    No hay video disponible
-                  </p>
+                  <p className="text-sm text-muted-foreground">No hay media disponible</p>
                 </div>
               </div>
             )}
@@ -403,82 +294,47 @@ export function PublicationDetailModal({
 
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <svg
-                className="w-4 h-4 text-muted-foreground"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2z"
-                  strokeWidth="2"
-                />
+              <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2z" strokeWidth="2" />
                 <polyline points="14 2 14 8 20 8" strokeWidth="2" />
                 <line x1="16" y1="13" x2="8" y2="13" strokeWidth="2" />
                 <line x1="16" y1="17" x2="8" y2="17" strokeWidth="2" />
                 <polyline points="10 9 9 9 8 9" strokeWidth="2" />
               </svg>
-              <span className="text-sm text-muted-foreground">
-                Descripción / Caption
-              </span>
+              <span className="text-sm text-muted-foreground">Texto / Contenido</span>
             </div>
             <div className="p-4 bg-muted/50 rounded-lg whitespace-pre-wrap">
-              {publication.description || "Sin descripción"}
+              {publication.description || publication.title || "Sin texto"}  // Corregido para evitar error de 'text'
             </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <svg
-                  className="w-4 h-4 text-muted-foreground"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <rect
-                    x="3"
-                    y="4"
-                    width="18"
-                    height="18"
-                    rx="2"
-                    ry="2"
-                    strokeWidth="2"
-                  />
+                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeWidth="2" />
                   <line x1="16" y1="2" x2="16" y2="6" strokeWidth="2" />
                   <line x1="8" y1="2" x2="8" y2="6" strokeWidth="2" />
                   <line x1="3" y1="10" x2="21" y2="10" strokeWidth="2" />
                 </svg>
-                <span className="text-sm text-muted-foreground">
-                  Fecha Programada
-                </span>
+                <span className="text-sm text-muted-foreground">Fecha Programada</span>
               </div>
               <p className="text-sm font-medium">{formatDate(scheduledDate)}</p>
             </div>
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <svg
-                  className="w-4 h-4 text-muted-foreground"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10" strokeWidth="2" />
                   <polyline points="12 6 12 12 16 14" strokeWidth="2" />
                 </svg>
-                <span className="text-sm text-muted-foreground">
-                  Hora Programada
-                </span>
+                <span className="text-sm text-muted-foreground">Hora Programada</span>
               </div>
               <p className="text-sm font-medium">{formatTime(scheduledDate)}</p>
             </div>
           </div>
 
           <div className="flex gap-3 pt-4 border-t border-border">
-            <button
-              onClick={onClose}
-              className="flex-1 hover:cursor-pointer px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
-            >
+            <button onClick={onClose} className="flex-1 px-4 py-2 bg-black hover:bg-gray-800 text-white rounded-lg transition-colors font-medium">
               Cerrar
             </button>
           </div>
