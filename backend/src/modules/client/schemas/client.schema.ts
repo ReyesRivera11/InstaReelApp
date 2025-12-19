@@ -1,16 +1,17 @@
 import z from "zod";
 
 export const clientIdSchema = z.object({ id: z.coerce.number().positive() });
+import { SocialIdentity } from "@prisma/client";
 
 export const createClientSchema = z.object({
-  long_lived_token: z.string(),
-  name: z.string().min(3),
-  username: z.string().min(3),
-  access_token: z.string().optional(),
-  data_access_expiration_time: z.string().optional(),
-  expires_in: z.string().optional(),
-  description: z.string().min(3).optional(),
+  name: z.string(),
+  username: z.string(),
+  social_identity: z.nativeEnum(SocialIdentity),
+  description: z.string().optional(),
+  insta_id: z.string().optional(),
+  long_lived_token: z.string().optional(),
 });
+
 
 export const updateClientSchema = createClientSchema
   .pick({

@@ -3,52 +3,113 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model user {
-  id         Int    @id @default(autoincrement())
-  first_name String
-  last_name  String
-  email      String @unique
-  password   String
-
+  id             Int              @id @default(autoincrement())
+  first_name     String
+  last_name      String
+  email          String           @unique
+  password       String
   refresh_tokens refresh_tokens[]
 }
 
 model refresh_tokens {
   id      Int    @id @default(autoincrement())
   user_id Int
-  user    user   @relation(fields: [user_id], references: [id])
   token   String
+  user    user   @relation(fields: [user_id], references: [id])
 }
 
 model client {
-  id               Int     @id @default(autoincrement())
+  id               Int             @id @default(autoincrement())
   name             String
-  username         String  @unique
+  username         String          @unique
+  social_identity  SocialIdentity
   description      String?
   insta_id         String?
-  long_lived_token String? @db.VarChar(250)
-
-  instagram_reels instagram_reels[]
+  long_lived_token String?         @db.VarChar(250)
+  reels            reels[]
+  tiktok_account   tiktok_account?
+  x_account        x_account?
+  x_posts          x_posts[]
 }
 
-model instagram_reels {
-  id                 Int        @id @default(autoincrement())
+model reels {
+  id                 Int            @id @default(autoincrement())
   client_id          Int
-  client             client     @relation(fields: [client_id], references: [id])
-  status             ReelStatus @default(SCHEDULED)
+  status             ReelStatus     @default(SCHEDULED)
   title              String
+  social_identity    SocialIdentity
   description        String?
   video_url          String?
   scheduled_date     DateTime?
-  container_media_id String?    @unique
-  created_at         DateTime?  @default(now())
+  container_media_id String?        @unique
+  created_at         DateTime       @default(now())
+  client             client         @relation(fields: [client_id], references: [id])
+}
+
+model tiktok_account {
+  id            Int      @id @default(autoincrement())
+  client_id     Int      @unique
+  open_id       String   @unique
+  access_token  String   @db.VarChar(500)
+  refresh_token String   @db.VarChar(500)
+  expires_at    DateTime
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  client        client   @relation(fields: [client_id], references: [id])
+}
+
+enum SocialIdentity {
+  INSTAGRAM
+  FACEBOOK
+  TIKTOK
+  X
 }
 
 enum ReelStatus {
   PUBLISHED
   SCHEDULED
+}
+
+model x_account {
+  id             Int      @id @default(autoincrement())
+  client_id      Int      @unique
+  client         client   @relation(fields: [client_id], references: [id])
+
+  x_user_id      String
+  username       String
+
+  access_token   String   @db.Text
+  refresh_token  String?  @db.Text
+  expires_at     DateTime
+
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+}
+
+model x_posts {
+  id            Int          @id @default(autoincrement())
+  client_id     Int
+  client        client       @relation(fields: [client_id], references: [id])
+
+  text          String       @db.VarChar(280)
+  status        XPostStatus  @default(SCHEDULED)
+
+  tweet_id      String?      @unique
+  scheduled_at  DateTime?
+  published_at  DateTime?
+  error_message String?
+
+  created_at    DateTime     @default(now())
+}
+
+enum XPostStatus {
+  SCHEDULED
+  PUBLISHED
+  FAILED
 }
