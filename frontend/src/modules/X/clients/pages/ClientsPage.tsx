@@ -143,6 +143,7 @@ export function XClientsPage() {
     }
   }, [oauthCompleted, loadClients, setOauthCompleted]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleAddClient = async (data: {
     name: string;
     username: string;
@@ -354,7 +355,7 @@ export function XClientsPage() {
         <AddClientModal
           isOpen={isModalOpen}
           onClose={handleCloseModal}
-          onSubmit={handleAddClient}
+
         />
 
         <EditClientModal

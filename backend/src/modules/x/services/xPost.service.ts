@@ -20,10 +20,12 @@ export class XPostService {
 
         // Refresh token si expiró
         if (account.expires_at <= new Date() && account.refresh_token) {
-            await XOAuthService.refreshToken(
-                clientId,
-                account.refresh_token
-            );
+            let accessToken = account.access_token;
+
+            if (account.expires_at && account.expires_at < new Date()) {
+                accessToken = await XOAuthService.refreshToken(clientId);
+            }
+
         }
 
         const tweetResponse = await axios.post(

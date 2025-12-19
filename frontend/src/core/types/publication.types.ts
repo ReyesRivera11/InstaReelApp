@@ -32,7 +32,7 @@ export interface ReelsFilters {
   status?: "SCHEDULED" | "PUBLISHED";
   page?: number;
   limit?: number;
-  social_identity?: "INSTAGRAM" | "FACEBOOK";
+  social_identity?: "X"| "INSTAGRAM" | "FACEBOOK";
 }
 
 export interface PaginatedReels {

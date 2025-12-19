@@ -1,153 +1,182 @@
 import crypto from "crypto";
-import axios from "axios";
-import { XAccountModel } from "../models/xAccount.model";
-
-const X_AUTHORIZE_URL = "https://twitter.com/i/oauth2/authorize";
-const X_TOKEN_URL = "https://api.twitter.com/2/oauth2/token";
-const X_ME_URL = "https://api.twitter.com/2/users/me";
-
-interface PKCEData {
-    codeVerifier: string;
-    codeChallenge: string;
-}
+import prisma from "../../../shared/lib/prisma";
+import { SocialIdentity } from "@prisma/client";
+import { AppError } from "../../../core/errors/AppError";
+import { HttpCode } from "../../../shared/enums/HttpCode";
+import { XTokenResponse } from "../interfaces/XTokenResponse.interface";
 
 export class XOAuthService {
-    /* ============================
-       PKCE helpers
-    ============================ */
+    static async generateAuthUrl(data: {
+        name: string;
+        username: string;
+        description?: string;
+    }): Promise<{
+        clientId: number;
+        url: string;
+        codeVerifier: string;
+    }> {
+        const existing = await prisma.client.findFirst({
+            where: {
+                username: data.username,
+                social_identity: SocialIdentity.X,
+            },
+        });
 
-    private static generatePKCE(): PKCEData {
-        const codeVerifier = crypto.randomBytes(32).toString("base64url");
+        const client =
+            existing ??
+            (await prisma.client.create({
+                data: {
+                    name: data.name,
+                    username: data.username,
+                    description: data.description,
+                    social_identity: SocialIdentity.X,
+                },
+            }));
 
-        const hash = crypto
+        // PKCE
+        const codeVerifier = crypto.randomBytes(32).toString("hex");
+        const codeChallenge = crypto
             .createHash("sha256")
             .update(codeVerifier)
-            .digest();
-
-        const codeChallenge = Buffer.from(hash).toString("base64url");
-
-        return { codeVerifier, codeChallenge };
-    }
-
-    /* ============================
-       Step 1: Generate Auth URL
-    ============================ */
-
-    static generateAuthUrl(clientId: number) {
-        const { codeVerifier, codeChallenge } = this.generatePKCE();
+            .digest("base64url");
 
         const params = new URLSearchParams({
             response_type: "code",
-            client_id: process.env.X_CLIENT_ID!,
-            redirect_uri: process.env.X_REDIRECT_URI!,
-            scope: process.env.X_SCOPES!,
-            state: clientId.toString(),
+            client_id: process.env.X_CLIENT_ID as string,
+            redirect_uri: process.env.X_REDIRECT_URI as string,
+            scope: "tweet.read tweet.write users.read offline.access",
+            state: String(client.id),
             code_challenge: codeChallenge,
             code_challenge_method: "S256",
         });
 
+        const url = `https://twitter.com/i/oauth2/authorize?${params.toString()}`;
+
         return {
-            url: `${X_AUTHORIZE_URL}?${params.toString()}`,
-            codeVerifier, // ⚠️ debes persistirlo temporalmente
+            clientId: client.id,
+            url,
+            codeVerifier,
         };
     }
 
-    /* ============================
-       Step 2: Exchange code → token
-    ============================ */
+    static async exchangeCode(clientId: number, code: string, codeVerifier: string) {
+        const clientIdEnv = process.env.X_CLIENT_ID;
+        const clientSecretEnv = process.env.X_CLIENT_SECRET; // 👈 si es Web App, casi siempre se requiere
 
-    static async exchangeCode(
-        clientId: number,
-        code: string,
-        codeVerifier: string
-    ) {
-        const tokenResponse = await axios.post(
-            X_TOKEN_URL,
-            new URLSearchParams({
-                grant_type: "authorization_code",
-                client_id: process.env.X_CLIENT_ID!,
-                redirect_uri: process.env.X_REDIRECT_URI!,
-                code,
-                code_verifier: codeVerifier,
-            }),
-            {
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    Authorization:
-                        "Basic " +
-                        Buffer.from(
-                            `${process.env.X_CLIENT_ID}:${process.env.X_CLIENT_SECRET}`
-                        ).toString("base64"),
-                },
-            }
-        );
+        if (!clientIdEnv) {
+            throw new AppError({
+                httpCode: HttpCode.INTERNAL_SERVER_ERROR,
+                description: "Missing X_CLIENT_ID env var",
+            });
+        }
 
-        const {
-            access_token,
-            refresh_token,
-            expires_in,
-        } = tokenResponse.data;
+        if (!process.env.X_REDIRECT_URI) {
+            throw new AppError({
+                httpCode: HttpCode.INTERNAL_SERVER_ERROR,
+                description: "Missing X_REDIRECT_URI env var",
+            });
+        }
 
-        /* ============================
-           Get X user info
-        ============================ */
+        // 1) Token exchange
+        const tokenBody = new URLSearchParams({
+            grant_type: "authorization_code",
+            code,
+            redirect_uri: process.env.X_REDIRECT_URI,
+            client_id: clientIdEnv,
+            code_verifier: codeVerifier,
+        });
 
-        const meResponse = await axios.get(X_ME_URL, {
+        // ✅ Si tienes client secret, manda Basic Auth (muchas apps lo requieren aunque uses PKCE)
+        const headers: Record<string, string> = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Accept: "application/json",
+        };
+
+        if (clientSecretEnv) {
+            const basic = Buffer.from(`${clientIdEnv}:${clientSecretEnv}`).toString("base64");
+            headers.Authorization = `Basic ${basic}`;
+        }
+
+        const tokenResponse = await fetch("https://api.twitter.com/2/oauth2/token", {
+            method: "POST",
+            headers,
+            body: tokenBody.toString(),
+        });
+
+        const tokenRaw = await tokenResponse.text();
+
+        if (!tokenResponse.ok) {
+            // 👇 esto te dice EXACTO el motivo: invalid_grant, redirect_uri mismatch, etc.
+            console.error("X TOKEN ERROR:", tokenRaw);
+
+            throw new AppError({
+                httpCode: HttpCode.UNAUTHORIZED,
+                description: "Failed to exchange code with X",
+                details: { x_error: tokenRaw }, // 👈 para que también lo veas en la respuesta si tu middleware lo expone
+            });
+        }
+
+        // tokenRaw es JSON
+        const tokenData = JSON.parse(tokenRaw) as XTokenResponse;
+
+        if (!tokenData.access_token || !tokenData.expires_in) {
+            throw new AppError({
+                httpCode: HttpCode.UNAUTHORIZED,
+                description: "X token response missing required fields",
+                details: { tokenData },
+            });
+        }
+
+        // 2) Obtener usuario de X
+        const meResponse = await fetch("https://api.twitter.com/2/users/me", {
             headers: {
-                Authorization: `Bearer ${access_token}`,
+                Authorization: `Bearer ${tokenData.access_token}`,
+                Accept: "application/json",
             },
         });
 
-        const { id: x_user_id, username } = meResponse.data.data;
+        const meRaw = await meResponse.text();
 
-        const expiresAt = new Date(Date.now() + expires_in * 1000);
+        if (!meResponse.ok) {
+            console.error("X /users/me ERROR:", meRaw);
+            throw new AppError({
+                httpCode: HttpCode.UNAUTHORIZED,
+                description: "Failed to fetch X user profile",
+                details: { x_error: meRaw },
+            });
+        }
 
-        return XAccountModel.create({
-            client_id: clientId,
-            x_user_id,
-            username,
-            access_token,
-            refresh_token,
-            expires_at: expiresAt,
-        });
-    }
+        const meData = JSON.parse(meRaw) as {
+            data: { id: string; username: string };
+        };
 
-    /* ============================
-       Step 3: Refresh token
-    ============================ */
+        if (!meData?.data?.id || !meData?.data?.username) {
+            throw new AppError({
+                httpCode: HttpCode.UNAUTHORIZED,
+                description: "Invalid X user profile response",
+                details: { meData },
+            });
+        }
 
-    static async refreshToken(clientId: number, refreshToken: string) {
-        const response = await axios.post(
-            X_TOKEN_URL,
-            new URLSearchParams({
-                grant_type: "refresh_token",
-                refresh_token: refreshToken,
-                client_id: process.env.X_CLIENT_ID!,
-            }),
-            {
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                    Authorization:
-                        "Basic " +
-                        Buffer.from(
-                            `${process.env.X_CLIENT_ID}:${process.env.X_CLIENT_SECRET}`
-                        ).toString("base64"),
-                },
-            }
-        );
-
-        const {
-            access_token,
-            refresh_token: newRefreshToken,
-            expires_in,
-        } = response.data;
-
-        const expiresAt = new Date(Date.now() + expires_in * 1000);
-
-        return XAccountModel.updateTokens(clientId, {
-            access_token,
-            refresh_token: newRefreshToken,
-            expires_at: expiresAt,
+        // 3) Guardar en x_account
+        // ✅ upsert para evitar error si ya existía (client_id es unique)
+        await prisma.x_account.upsert({
+            where: { client_id: clientId },
+            update: {
+                x_user_id: meData.data.id,
+                username: meData.data.username,
+                access_token: tokenData.access_token,
+                refresh_token: tokenData.refresh_token ?? null,
+                expires_at: new Date(Date.now() + tokenData.expires_in * 1000),
+            },
+            create: {
+                client_id: clientId,
+                x_user_id: meData.data.id,
+                username: meData.data.username,
+                access_token: tokenData.access_token,
+                refresh_token: tokenData.refresh_token ?? null,
+                expires_at: new Date(Date.now() + tokenData.expires_in * 1000),
+            },
         });
     }
 }

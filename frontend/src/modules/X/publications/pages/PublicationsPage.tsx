@@ -72,7 +72,7 @@ const PublicationsPageX = () => {
       const filters: ReelsFilters = {
         page: currentPage,
         limit: itemsPerPage,
-        social_identity: "INSTAGRAM",
+        social_identity: "X",
       };
 
       if (debouncedSearchTerm) filters.search = debouncedSearchTerm;
