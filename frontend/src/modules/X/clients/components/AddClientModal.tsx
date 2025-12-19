@@ -6,14 +6,20 @@ import { Modal } from "../../../../shared/components/ui/Modal"
 import { Button } from "../../../../shared/components/ui/Button"
 import { Input } from "../../../../shared/components/ui/Input"
 import { Alert } from "../../../../shared/components/ui/Alert"
-import { Icons } from "../../../../shared/components/icons"
 import { AlertCircle, CheckCircle } from "lucide-react"
 import { useApp } from "../../../../shared/hooks/useApp"
+
+// Logo 
+const XLogo = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+)
 
 interface AddClientModalProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (data: {
+  onSubmit?: (data: {
     name: string
     username: string
     description?: string
@@ -22,7 +28,7 @@ interface AddClientModalProps {
 
 export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
   const [name, setName] = useState("")
-  const [instagramHandle, setInstagramHandle] = useState("")
+  const [username, setUsername] = useState("")
   const [description, setDescription] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -30,19 +36,19 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
 
   const [validationErrors, setValidationErrors] = useState<{
     name?: string
-    instagramHandle?: string
+    username?: string
   }>({})
 
   useEffect(() => {
     if (error) {
-      const timer = setTimeout(() => setError(null), 3000)
+      const timer = setTimeout(() => setError(null), 4000)
       return () => clearTimeout(timer)
     }
   }, [error])
 
   useEffect(() => {
     if (success) {
-      const timer = setTimeout(() => setSuccess(false), 3000)
+      const timer = setTimeout(() => setSuccess(false), 4000)
       return () => clearTimeout(timer)
     }
   }, [success])
@@ -58,7 +64,7 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
           setOauthCompleted(true)
         }, 1500)
       } else if (event.data.type === "INSTAGRAM_OAUTH_ERROR") {
-        setError(event.data.error || "Error en la autenticación de Instagram")
+        setError(event.data.error || "Error en la autenticación con X")
       }
     }
 
@@ -67,14 +73,14 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
   }, [setOauthCompleted])
 
   const validateName = (value: string) => {
-    if (!value.trim()) return "Requerido"
+    if (!value.trim()) return "El nombre es requerido"
     if (value.length > 100) return "Máximo 100 caracteres"
     return undefined
   }
 
-  const validateInstagramHandle = (value: string) => {
-    if (!value.trim()) return "Requerido"
-    if (value.includes("@")) return "No debe incluir @"
+  const validateUsername = (value: string) => {
+    if (!value.trim()) return "El usuario es requerido"
+    if (value.includes("@")) return "No incluyas el @"
     if (value.length < 3) return "Mínimo 3 caracteres"
     if (value.length > 30) return "Máximo 30 caracteres"
     if (!/^[a-zA-Z0-9._]+$/.test(value)) return "Solo letras, números, puntos y guiones bajos"
@@ -85,44 +91,45 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
     const value = e.target.value
     setName(value)
     const error = validateName(value)
-    setValidationErrors((prev) => ({ ...prev, name: error }))
+    setValidationErrors(prev => ({ ...prev, name: error }))
   }
 
-  const handleInstagramHandleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
-    setInstagramHandle(value)
-    const error = validateInstagramHandle(value)
-    setValidationErrors((prev) => ({ ...prev, instagramHandle: error }))
+    setUsername(value)
+    const error = validateUsername(value)
+    setValidationErrors(prev => ({ ...prev, username: error }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     const nameError = validateName(name)
-    const handleError = validateInstagramHandle(instagramHandle)
+    const usernameError = validateUsername(username)
 
-    if (nameError || handleError) {
-      setValidationErrors({ name: nameError, instagramHandle: handleError })
-      setError("Por favor corrige los errores en el formulario")
+    if (nameError || usernameError) {
+      setValidationErrors({ name: nameError, username: usernameError })
+      setError("Por favor corrige los errores")
       return
     }
 
     const clientData = {
-      name,
-      username: instagramHandle,
-      description,
+      name: name.trim(),
+      username: username.trim(),
+      description: description.trim() || undefined,
     }
+
     localStorage.setItem("pending_client", JSON.stringify(clientData))
 
+    // Aqui debo poner el de X
     const oauthUrl =
       "https://www.facebook.com/dialog/oauth?" +
       new URLSearchParams({
-        client_id: "25204565109180194",
+        client_id: import.meta.env.VITE_CLIENT_ID,
         display: "page",
-        redirect_uri: "https://instareel-app.netlify.app/meta/callback",
+        redirect_uri: import.meta.env.VITE_REDIRECT_URI,
         response_type: "token",
-        scope:
-          "instagram_basic,instagram_content_publish,instagram_manage_comments,instagram_manage_insights,pages_show_list,pages_read_engagement",
+        scope: import.meta.env.VITE_CODE_SCOPE,
         extras: JSON.stringify({ setup: { channel: "IG_API_ONBOARDING" } }),
       }).toString()
 
@@ -133,14 +140,14 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
 
     window.open(
       oauthUrl,
-      "instagram_oauth",
-      `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`,
+      "x_oauth",
+      `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
     )
   }
 
   const handleReset = () => {
     setName("")
-    setInstagramHandle("")
+    setUsername("")
     setDescription("")
     setError(null)
     setSuccess(false)
@@ -162,71 +169,62 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
 
       {success && (
         <Alert variant="success" icon={<CheckCircle className="w-5 h-5" />}>
-          ¡Cliente agregado exitosamente!
+          ¡Cuenta conectada con X exitosamente!
         </Alert>
       )}
 
       <Modal
         isOpen={isOpen}
         onClose={handleCancel}
-        title="Nuevo Cliente"
-        description="Registra una nueva cuenta de Instagram para gestionar"
+        title="Conectar Cuenta de X"
+        description="Ingresa los datos para conectar una nueva cuenta de X"
         maxWidth="2xl"
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <Input
               id="name"
-              label="Nombre del Cliente"
-              placeholder="Nombre de la empresa o marca"
+              label="Nombre de la cuenta"
+              placeholder="Ej: Mi Marca Oficial"
               value={name}
               onChange={handleNameChange}
+              error={validationErrors.name}
             />
-            {validationErrors.name && (
-              <p className="text-sm text-red-600 dark:text-red-400 mt-1">{validationErrors.name}</p>
-            )}
           </div>
 
           <div>
             <Input
-              id="handle"
-              label="Usuario de Instagram"
-              placeholder="usuario_instagram"
-              value={instagramHandle}
-              onChange={handleInstagramHandleChange}
+              id="username"
+              label="Usuario de X"
+              placeholder="usuario_x"
+              value={username}
+              onChange={handleUsernameChange}
               leftIcon={<span className="text-muted-foreground">@</span>}
+              error={validationErrors.username}
             />
-            {validationErrors.instagramHandle && (
-              <p className="text-sm text-red-600 dark:text-red-400 mt-1">{validationErrors.instagramHandle}</p>
-            )}
           </div>
 
           <div>
             <Input
               id="description"
-              label="Descripción"
-              placeholder="Breve descripción del cliente (opcional)"
+              label="Descripción (opcional)"
+              placeholder="Breve descripción de la cuenta"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
-            {description.length > 0 && (
-              <p className="text-sm text-muted-foreground mt-1">
-                {description.length}/500 caracteres{" "}
-                {description.length > 500 && (
-                  <span className="text-red-600 dark:text-red-400">- Máximo 500 caracteres</span>
-                )}
-              </p>
-            )}
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row gap-2 justify-end pt-4">
+          <div className="flex flex-col-reverse sm:flex-row gap-3 justify-end pt-4">
             <Button type="button" variant="outline" onClick={handleCancel}>
               Cancelar
             </Button>
 
-            <Button type="submit" variant="gradient">
-              <Icons.Instagram />
-              Conectar con Instagram
+            <Button
+              type="submit"
+              className="bg-black hover:bg-gray-800 text-white"
+            >
+              <XLogo className="w-5 h-5 mr-2" />
+              Conectar con X
             </Button>
           </div>
         </form>

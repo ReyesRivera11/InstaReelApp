@@ -7,6 +7,13 @@ import { AlertCircle } from "lucide-react";
 import type { ClientDB, UpdateClientDTO } from "../../../../core/types";
 import { Button, Input, Textarea } from "../../../../shared/components/ui";
 
+// Logo oficial de X (la letra X)
+const XLogo = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
+
 interface EditClientModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -49,7 +56,7 @@ export function EditClientModal({
 
   const validateUsername = (value: string) => {
     if (!value.trim()) return "El usuario es requerido";
-    if (value.includes("@")) return "No debe incluir @";
+    if (value.includes("@")) return "No incluyas el @";
     if (value.length < 3) return "Mínimo 3 caracteres";
     if (value.length > 30) return "Máximo 30 caracteres";
     if (!/^[a-zA-Z0-9._]+$/.test(value))
@@ -114,7 +121,7 @@ export function EditClientModal({
       handleReset();
       onClose();
     } catch (error) {
-      console.error("Error updating client:", error);
+      console.error("Error al actualizar la cuenta:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -138,11 +145,14 @@ export function EditClientModal({
     <div className="fixed inset-0 min-h-screen bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-md mx-4 sm:max-w-[500px]">
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex flex-col space-y-1.5">
-            <h2 className="text-lg font-semibold">Editar Cliente</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Actualiza la información del cliente
-            </p>
+          <div className="flex items-center gap-3">
+            <XLogo className="w-8 h-8" />
+            <div>
+              <h2 className="text-lg font-semibold">Editar Cuenta de X</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Actualiza la información de la cuenta
+              </p>
+            </div>
           </div>
         </div>
 
@@ -150,18 +160,17 @@ export function EditClientModal({
           <div className="p-3 sm:p-4 border rounded-lg flex gap-2 sm:gap-3 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-300 items-start">
             <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" />
             <p className="text-xs sm:text-sm">
-              Ahora puedes editar el nombre, nombre de usuario y la descripción
-              del cliente.
+              Puedes editar el nombre, el usuario y la descripción de la cuenta.
             </p>
           </div>
 
           <div>
             <label htmlFor="name" className="block text-sm font-medium mb-2">
-              Nombre del Cliente
+              Nombre de la cuenta
             </label>
             <Input
               id="name"
-              placeholder="Nombre completo del cliente"
+              placeholder="Ej: Mi Marca Oficial"
               value={name}
               onChange={handleNameChange}
             />
@@ -173,11 +182,8 @@ export function EditClientModal({
           </div>
 
           <div>
-            <label
-              htmlFor="username"
-              className="block text-sm font-medium mb-2"
-            >
-              Usuario de Instagram
+            <label htmlFor="username" className="block text-sm font-medium mb-2">
+              Usuario de X
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
@@ -185,7 +191,7 @@ export function EditClientModal({
               </span>
               <Input
                 id="username"
-                placeholder="usuario_instagram"
+                placeholder="usuario_x"
                 value={username}
                 onChange={handleUsernameChange}
                 className="pl-8"
@@ -199,15 +205,12 @@ export function EditClientModal({
           </div>
 
           <div>
-            <label
-              htmlFor="description"
-              className="block text-sm font-medium mb-2"
-            >
+            <label htmlFor="description" className="block text-sm font-medium mb-2">
               Descripción (opcional)
             </label>
             <Textarea
               id="description"
-              placeholder="Breve descripción del cliente"
+              placeholder="Breve descripción de la cuenta"
               value={description}
               onChange={handleDescriptionChange}
               rows={3}
@@ -229,23 +232,22 @@ export function EditClientModal({
             )}
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row gap-2 justify-end pt-4">
+          <div className="flex flex-col-reverse sm:flex-row gap-3 justify-end pt-4">
             <Button
               type="button"
               variant="outline"
               onClick={handleCancel}
               disabled={isSubmitting}
-              className="w-full sm:w-auto bg-transparent"
             >
               Cancelar
             </Button>
-            <button
+            <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full hover:cursor-pointer sm:w-auto px-4 py-2 bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-black hover:bg-gray-800 text-white"
             >
               {isSubmitting ? "Guardando..." : "Guardar Cambios"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
