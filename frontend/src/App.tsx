@@ -16,6 +16,9 @@ import { FacebookClientsPage } from "./modules/facebook/clients/pages/ClientsPag
 import SchedulePostPage from "./modules/facebook/schedule/SchedulePostPage";
 import PublicationsPageFb from "./modules/facebook/publications/pages/PublicationsPage";
 import { MetaCallbackPageFacebook } from "./shared/hooks/metaCallBackFB";
+import XSchedulePostPage from "./modules/X/schedule/XSchedulePostPage";
+import XPublicationsPage from "./modules/X/publications/pages/PublicationsPage";
+import { XClientsPage } from "./modules/X/clients/pages/ClientsPage";
 
 function ComingSoonPage({ network }: { network: string }) {
   return (
@@ -105,9 +108,11 @@ function AppContent() {
         return <ComingSoonPage network="WhatsApp" />;
 
       case "x-clients":
+         return <XClientsPage />;
       case "x-publications":
+        return <XPublicationsPage />;
       case "x-schedule":
-        return <ComingSoonPage network="X (Twitter)" />;
+         return <XSchedulePostPage />;
 
       default:
         return <DashboardPage />;
