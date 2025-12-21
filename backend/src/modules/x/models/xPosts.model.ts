@@ -1,21 +1,50 @@
-import prisma from "../../../shared/lib/prisma";
-import { XPostStatus } from "@prisma/client";
+// xPosts.model.ts
+import prisma from "../../../shared/lib/prisma"
+import { XPostStatus, XMediaType } from "@prisma/client"
 
-export class XPostsModel {
-    static async create(data: {
-        client_id: number;
-        text: string;
-        scheduled_at?: Date;
-    }) {
+export const XPostsModel = {
+    create: (data: {
+        client_id: number
+        text: string
+        media_url?: string | null
+        media_type?: XMediaType | null
+        scheduled_at: Date
+    }) => {
         return prisma.x_posts.create({
             data: {
-                ...data,
+                client_id: data.client_id,
+                text: data.text,
+                media_url: data.media_url ?? null,
+                media_type: data.media_type ?? null,
+                scheduled_at: data.scheduled_at,
                 status: XPostStatus.SCHEDULED,
             },
-        });
-    }
+        })
+    },
 
-    static async getScheduledPosts() {
+    markPublished: (id: number, tweet_id: string) => {
+        return prisma.x_posts.update({
+            where: { id },
+            data: {
+                status: XPostStatus.PUBLISHED,
+                tweet_id,
+                published_at: new Date(),
+                error_message: null,
+            },
+        })
+    },
+
+    markFailed: (id: number, error: string) => {
+        return prisma.x_posts.update({
+            where: { id },
+            data: {
+                status: XPostStatus.FAILED,
+                error_message: error,
+            },
+        })
+    },
+
+    getPending: () => {
         return prisma.x_posts.findMany({
             where: {
                 status: XPostStatus.SCHEDULED,
@@ -26,34 +55,6 @@ export class XPostsModel {
             include: {
                 client: true,
             },
-        });
-    }
-
-    static async markAsPublished(postId: number, tweetId: string) {
-        return prisma.x_posts.update({
-            where: { id: postId },
-            data: {
-                status: XPostStatus.PUBLISHED,
-                tweet_id: tweetId,
-                published_at: new Date(),
-            },
-        });
-    }
-
-    static async markAsFailed(postId: number, error: string) {
-        return prisma.x_posts.update({
-            where: { id: postId },
-            data: {
-                status: XPostStatus.FAILED,
-                error_message: error,
-            },
-        });
-    }
-
-    static async getByClientId(clientId: number) {
-        return prisma.x_posts.findMany({
-            where: { client_id: clientId },
-            orderBy: { created_at: "desc" },
-        });
-    }
+        })
+    },
 }
