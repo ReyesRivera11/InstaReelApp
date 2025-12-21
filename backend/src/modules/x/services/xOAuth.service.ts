@@ -179,4 +179,84 @@ export class XOAuthService {
             },
         });
     }
+
+    static async refreshToken(clientId: number): Promise<string> {
+        const account = await prisma.x_account.findUnique({
+            where: { client_id: clientId },
+        });
+
+        if (!account || !account.refresh_token) {
+            throw new AppError({
+                httpCode: HttpCode.UNAUTHORIZED,
+                description: "No refresh token available for X account",
+            });
+        }
+
+        const clientIdEnv = process.env.X_CLIENT_ID;
+        const clientSecretEnv = process.env.X_CLIENT_SECRET;
+
+        if (!clientIdEnv) {
+            throw new AppError({
+                httpCode: HttpCode.INTERNAL_SERVER_ERROR,
+                description: "Missing X_CLIENT_ID env var",
+            });
+        }
+
+        const body = new URLSearchParams({
+            grant_type: "refresh_token",
+            refresh_token: account.refresh_token,
+            client_id: clientIdEnv,
+        });
+
+        const headers: Record<string, string> = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Accept: "application/json",
+        };
+
+        // X suele requerir Basic Auth en refresh
+        if (clientSecretEnv) {
+            const basic = Buffer.from(
+                `${clientIdEnv}:${clientSecretEnv}`
+            ).toString("base64");
+            headers.Authorization = `Basic ${basic}`;
+        }
+
+        const response = await fetch(
+            "https://api.twitter.com/2/oauth2/token",
+            {
+                method: "POST",
+                headers,
+                body: body.toString(),
+            }
+        );
+
+        const raw = await response.text();
+
+        if (!response.ok) {
+            console.error("X REFRESH TOKEN ERROR:", raw);
+            throw new AppError({
+                httpCode: HttpCode.UNAUTHORIZED,
+                description: "Failed to refresh X access token",
+                details: { x_error: raw },
+            });
+        }
+
+        const data = JSON.parse(raw) as {
+            access_token: string;
+            refresh_token?: string;
+            expires_in: number;
+        };
+
+        await prisma.x_account.update({
+            where: { client_id: clientId },
+            data: {
+                access_token: data.access_token,
+                refresh_token: data.refresh_token ?? account.refresh_token,
+                expires_at: new Date(Date.now() + data.expires_in * 1000),
+            },
+        });
+
+        return data.access_token;
+    }
+
 }
