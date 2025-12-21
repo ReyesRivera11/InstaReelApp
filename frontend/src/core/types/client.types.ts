@@ -5,7 +5,7 @@ export interface CreateClientDTO {
   access_token?: string;
   expires_in?: string;
   long_lived_token?: string;
-  social_identity?: "FACEBOOK" | "INSTAGRAM";
+  social_identity?: "FACEBOOK" | "INSTAGRAM"| "X"| "TIKTOK";
 }
 export interface InitiateOAuthRequest {
   name: string;
@@ -39,7 +39,7 @@ export interface ClientDB {
   insta_id?: string;
   access_token?: string;
   long_lived_token?: string;
-  social_identity: "FACEBOOK" | "INSTAGRAM";
+  social_identity: "FACEBOOK" | "INSTAGRAM" | "X"| "TIKTOK";
 }
 export interface User {
   id?: number;
@@ -75,5 +75,5 @@ export interface ClientFilters {
   page?: number;
   limit?: number;
   search?: string;
-  social_identity?: string;
+  social_identity?: "FACEBOOK" | "INSTAGRAM" | "X"| "TIKTOK";
 }

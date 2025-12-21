@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 
 import { AlertCircle, Calendar, CheckCircle, Clock, Loader2, Upload } from "lucide-react"
 import { apiClient } from "../../../shared/services/api/reels/apiClients"
@@ -48,6 +48,11 @@ export default function XSchedulePostPage() {
     date?: string
     client?: string
   }>({})
+
+  // Filtro X
+  const filteredClients = useMemo(() => {
+    return clients.filter((client) => client.social_identity === "X");
+  }, [clients]);
 
   const getMinDateTime = () => {
     const now = new Date()
@@ -350,10 +355,10 @@ export default function XSchedulePostPage() {
                   onChange={(e) => handleClientChange(e.target.value)}
                   required
                   error={validationErrors.client}
-                  disabled={isLoadingClient}
+                  disabled={isLoadingClient || filteredClients.length === 0}
                 >
-                  <option value="">Selecciona una cuenta</option>
-                  {clients.map((client) => (
+                  <option value="">Selecciona una cuenta de X</option>
+                  {filteredClients.map((client) => (
                     <option key={client.id} value={client.id.toString()}>
                       {client.name} (@{client.username})
                     </option>
@@ -363,6 +368,11 @@ export default function XSchedulePostPage() {
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Cargando datos de la cuenta...
+                  </div>
+                )}
+                {filteredClients.length === 0 && (
+                  <div className="mt-2 text-sm text-amber-600">
+                    No tienes cuentas de X conectadas. Ve a "Mis Cuentas" para agregar una.
                   </div>
                 )}
                 {selectedClientData && !isLoadingClient && (
@@ -476,7 +486,7 @@ export default function XSchedulePostPage() {
               </Button>
               <Button
                 type="submit"
-                disabled={isLoading || clients.length === 0}
+                disabled={isLoading || filteredClients.length === 0}
                 className="bg-black hover:bg-gray-800 text-white"
               >
                 {isLoading ? (
