@@ -49,7 +49,7 @@ export default function XSchedulePostPage() {
     client?: string
   }>({})
 
-  // Filtro X
+  // Filtrar solo cuentas de X
   const filteredClients = useMemo(() => {
     return clients.filter((client) => client.social_identity === "X");
   }, [clients]);
