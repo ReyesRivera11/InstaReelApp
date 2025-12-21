@@ -7,6 +7,7 @@ import { Alert, Button, Card, Input } from "../../../shared/components/ui";
 import { useApp } from "../../../shared/hooks/useApp";
 import { storage } from "../../../shared/services/storage/localStorage";
 import { apiClient } from "../../../shared/services/api/reels/apiClients";
+import { Link } from "react-router-dom";
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
@@ -19,18 +20,14 @@ export function LoginPage() {
 
   useEffect(() => {
     if (error) {
-      const timer = setTimeout(() => {
-        setError(null);
-      }, 3000);
+      const timer = setTimeout(() => setError(null), 3000);
       return () => clearTimeout(timer);
     }
   }, [error]);
 
   useEffect(() => {
     if (success) {
-      const timer = setTimeout(() => {
-        setSuccess(false);
-      }, 3000);
+      const timer = setTimeout(() => setSuccess(false), 3000);
       return () => clearTimeout(timer);
     }
   }, [success]);
@@ -100,10 +97,7 @@ export function LoginPage() {
         <div className="p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <label
-                htmlFor="email"
-                className="text-sm font-medium text-foreground"
-              >
+              <label htmlFor="email" className="text-sm font-medium">
                 Correo electrónico
               </label>
               <Input
@@ -118,10 +112,7 @@ export function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <label
-                htmlFor="password"
-                className="text-sm font-medium text-foreground"
-              >
+              <label htmlFor="password" className="text-sm font-medium">
                 Contraseña
               </label>
               <Input
@@ -137,11 +128,32 @@ export function LoginPage() {
 
             <Button
               type="submit"
-              className="w-full shadow-md hover:shadow-lg hover:cursor-pointer"
+              className="w-full shadow-md hover:shadow-lg"
               disabled={isLoading}
             >
               {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
             </Button>
+
+            {/* 🔐 Legal */}
+            <p className="text-center text-xs text-muted-foreground pt-2">
+              Al iniciar sesión aceptas nuestros{" "}
+              <Link
+                to="/terms"
+                className="underline hover:text-blue-600"
+                target="_blank"
+              >
+                Términos y Condiciones
+              </Link>{" "}
+              y{" "}
+              <Link
+                to="/privacy"
+                className="underline hover:text-blue-600"
+                target="_blank"
+              >
+                Política de Privacidad
+              </Link>
+              .
+            </p>
 
             <p className="text-center text-sm text-muted-foreground pt-2">
               Conecta Instagram, Facebook, TikTok, WhatsApp y X
@@ -152,3 +164,4 @@ export function LoginPage() {
     </div>
   );
 }
+

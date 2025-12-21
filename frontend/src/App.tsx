@@ -17,6 +17,18 @@ import SchedulePostPage from "./modules/facebook/schedule/SchedulePostPage";
 import PublicationsPageFb from "./modules/facebook/publications/pages/PublicationsPage";
 import { MetaCallbackPageFacebook } from "./shared/hooks/metaCallBackFB";
 
+import { TikTokClientsPage } from "./modules/tiktok/clients/pages/TikTokClientsPage";
+import SchedulePostPagetikTok from "./modules/tiktok/schedule/SchedulePostPage";
+import PublicationsPageTikTok from "./modules/tiktok/publications/pages/PublicationsPage";
+
+import Privacy from "./modules/public/Privacy";
+import Terms from "./modules/public/Terms";
+
+import { useLocation } from "react-router-dom";
+
+
+
+
 function ComingSoonPage({ network }: { network: string }) {
   return (
     <div className="flex flex-col items-center justify-center h-full">
@@ -48,6 +60,13 @@ function ComingSoonPage({ network }: { network: string }) {
 
 function AppContent() {
   const { isAuthenticated, currentPage, setCurrentPage, logout } = useApp();
+  const location = useLocation();
+
+  React.useEffect(() => {
+    if (location.pathname.startsWith("/tiktok")) {
+      setCurrentPage("tiktok-clients");
+    }
+  }, [location.pathname, setCurrentPage]);
 
   const getActiveNetwork = (page: string): string => {
     if (page.startsWith("instagram")) return "instagram";
@@ -95,9 +114,14 @@ function AppContent() {
         return <SchedulePostPage />;
 
       case "tiktok-clients":
+        return <TikTokClientsPage />;
+
       case "tiktok-publications":
+        return <PublicationsPageTikTok />;
+
       case "tiktok-schedule":
-        return <ComingSoonPage network="TikTok" />;
+        return <SchedulePostPagetikTok />;
+
 
       case "whatsapp-clients":
       case "whatsapp-publications":
@@ -141,6 +165,11 @@ export default function App() {
             path="/meta/callback-fb"
             element={<MetaCallbackPageFacebook />}
           />
+
+          <Route path="/tiktok/clients" element={<AppContent />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+
         </Routes>
       </BrowserRouter>
     </AppProvider>
