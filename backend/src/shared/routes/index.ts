@@ -5,6 +5,8 @@ import clientRouter from "../../modules/client/routes/clients.routes";
 import reelsRouter from "../../modules/reels/routes/reels.routes";
 import dashboardRouter from "../../modules/dashboard/routes/dashboard.routes";
 import metaRouter from "../../modules/meta/routes/meta.routes";
+import tiktokRoutes from "../../modules/tiktok/tiktok.routes";
+
 
 const router = Router();
 
@@ -13,5 +15,6 @@ router.use('/client', clientRouter);
 router.use('/reels', reelsRouter);
 router.use('/meta/webhook', metaRouter);
 router.use('/dashboard', dashboardRouter);
+router.use("/tiktok", tiktokRoutes);
 
 export default router;

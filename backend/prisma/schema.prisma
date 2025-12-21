@@ -3,16 +3,21 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
+/* ================================
+   USERS & AUTH
+================================ */
+
 model user {
-  id         Int    @id @default(autoincrement())
-  first_name String
-  last_name  String
-  email      String @unique
-  password   String
+  id             Int              @id @default(autoincrement())
+  first_name     String
+  last_name      String
+  email          String           @unique
+  password       String
 
   refresh_tokens refresh_tokens[]
 }
@@ -20,42 +25,175 @@ model user {
 model refresh_tokens {
   id      Int    @id @default(autoincrement())
   user_id Int
-  user    user   @relation(fields: [user_id], references: [id])
   token   String
+
+  user    user   @relation(fields: [user_id], references: [id])
 }
 
+/* ================================
+   CLIENTS (MARCA / NEGOCIO)
+================================ */
+
 model client {
-  id               Int            @id @default(autoincrement())
+  id               Int             @id @default(autoincrement())
   name             String
-  username         String         @unique
+  username         String          @unique
   social_identity  SocialIdentity
   description      String?
   insta_id         String?
-  long_lived_token String?        @db.VarChar(250)
+  long_lived_token String?         @db.VarChar(250)
 
-  reels reels[]
+  reels            reels[]
+  tiktok_account   tiktok_account?
+  tiktok_reels     tiktok_reels[]
+  x_account        x_account?
+  x_posts          x_posts[]
 }
+
+/* ================================
+   REELS (INSTAGRAM / FACEBOOK)
+================================ */
 
 model reels {
   id                 Int            @id @default(autoincrement())
+
   client_id          Int
   client             client         @relation(fields: [client_id], references: [id])
-  status             ReelStatus     @default(SCHEDULED)
+
   title              String
-  social_identity    SocialIdentity
   description        String?
   video_url          String?
+
+  social_identity    SocialIdentity
+  status             ReelStatus     @default(SCHEDULED)
+
   scheduled_date     DateTime?
   container_media_id String?        @unique
-  created_at         DateTime?      @default(now())
+
+  created_at         DateTime       @default(now())
 }
+
+/* ================================
+   TIKTOK ACCOUNT (OAUTH)
+================================ */
+
+model tiktok_account {
+  id            Int      @id @default(autoincrement())
+  client_id     Int      @unique
+  open_id       String   @unique
+
+  access_token  String   @db.VarChar(500)
+  refresh_token String   @db.VarChar(500)
+  expires_at    DateTime
+
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  client        client   @relation(fields: [client_id], references: [id])
+}
+
+/* ================================
+   TIKTOK REELS (DIRECT POST API)
+================================ */
+
+model tiktok_reels {
+  id            Int      @id @default(autoincrement())
+
+  client_id     Int
+  client        client   @relation(fields: [client_id], references: [id])
+
+  title         String
+  description   String?
+
+  video_url     String   // URL pública (verified domain)
+  privacy_level String   // SELF_ONLY | PUBLIC_TO_EVERYONE | MUTUAL_FOLLOW_FRIENDS
+
+  allow_comment Boolean @default(false)
+  allow_duet    Boolean @default(false)
+  allow_stitch  Boolean @default(false)
+
+  is_commercial     Boolean @default(false)
+  brand_self        Boolean @default(false)
+  brand_third_party Boolean @default(false)
+
+  scheduled_at  DateTime?  // null = publicar inmediatamente
+  published_at  DateTime?
+
+  status        TikTokReelStatus @default(SCHEDULED)
+
+  publish_id    String?  @unique
+  video_id      String?  @unique
+
+  error_message String?
+
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@index([status, scheduled_at])
+}
+
+/* ================================
+   X (TWITTER)
+================================ */
+
+model x_account {
+  id            Int      @id @default(autoincrement())
+  client_id     Int      @unique
+
+  x_user_id     String
+  username      String
+
+  access_token  String   @db.Text
+  refresh_token String?  @db.Text
+  expires_at    DateTime
+
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  client        client   @relation(fields: [client_id], references: [id])
+}
+
+model x_posts {
+  id            Int          @id @default(autoincrement())
+  client_id     Int
+  client        client       @relation(fields: [client_id], references: [id])
+
+  text          String       @db.VarChar(280)
+  status        XPostStatus  @default(SCHEDULED)
+
+  tweet_id      String?      @unique
+  scheduled_at  DateTime?
+  published_at  DateTime?
+  error_message String?
+
+  created_at    DateTime     @default(now())
+}
+
+/* ================================
+   ENUMS
+================================ */
 
 enum SocialIdentity {
   INSTAGRAM
   FACEBOOK
+  TIKTOK
+  X
 }
 
 enum ReelStatus {
-  PUBLISHED
   SCHEDULED
+  PUBLISHED
+}
+
+enum TikTokReelStatus {
+  SCHEDULED
+  PROCESSING
+  PUBLISHED
+  FAILED
+}
+
+enum XPostStatus {
+  SCHEDULED
+  PUBLISHED
+  FAILED
 }
