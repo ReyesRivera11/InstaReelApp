@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { SocialIdentity } from "@prisma/client"; 
 
 import { validateSchema } from "../../../shared/utils/zodValidation";
 import {
@@ -26,10 +27,33 @@ export class ClientController {
     res.json({ client });
   }
 
-  static async getAllClients(_req: Request, res: Response) {
-    const clients = await getAllClientsService();
+  static async getAllClients(req: Request, res: Response) {
+    // Extraer parámetros de query 
+    const {
+      page = "1",
+      limit = "10",
+      social_identity,
+      search,
+    } = req.query;
 
-    res.json({ clients });
+    // Convertir a números
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
+
+    // Validar social_identity 
+    const socialIdentity = social_identity
+      ? (social_identity as SocialIdentity)
+      : undefined;
+
+    // Llamar al servicio con filtros
+    const result = await getAllClientsService({
+      page: pageNum,
+      limit: limitNum,
+      social_identity: socialIdentity,
+      search: search ? String(search) : undefined,
+    });
+
+    res.json(result); // { clients, total, page, totalPages, hasNext, hasPrev }
   }
 
   static async createClient(req: Request, res: Response) {

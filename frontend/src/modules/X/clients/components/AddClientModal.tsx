@@ -133,6 +133,7 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
       name: name.trim(),
       username: username.trim(),
       description: description.trim() || undefined,
+      social_identity: "X",
     }
 
     try {
