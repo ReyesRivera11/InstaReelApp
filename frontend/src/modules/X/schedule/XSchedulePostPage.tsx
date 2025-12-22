@@ -168,7 +168,7 @@ export default function XSchedulePostPage() {
       await apiXPosts.create(formData)
 
       setSuccess(true)
-      setTimeout(() => setCurrentPage("publications"), 1500)
+      setTimeout(() => setCurrentPage("x-publications"), 1500)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al publicar")
     } finally {
