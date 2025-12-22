@@ -91,11 +91,49 @@ export class XAuthController {
       pkceStore.delete(clientId);
 
       // 4️⃣ Redirección al frontend
-      return res.redirect(
-        `${process.env.FRONTEND_URL}/clients/${clientId}?x=connected`
-      );
-    } catch (error) {
-      next(error);
-    }
+     res.setHeader('Content-Type', 'text/html');
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <title>Conectando con X...</title>
+        <script>
+          // Enviar mensaje de éxito al opener (ventana principal)
+          window.opener.postMessage({
+            type: "X_OAUTH_SUCCESS",
+            clientId: ${clientId}
+          }, "${process.env.FRONTEND_URL}");
+
+          // Cerrar el popup automáticamente
+          window.close();
+        </script>
+      </head>
+      <body>
+        <p>Cuenta conectada exitosamente. Esta ventana se cerrará automáticamente.</p>
+      </body>
+      </html>
+    `);
+  } catch (error) {
+    // En caso de error, envía mensaje de error y cierra
+    res.setHeader('Content-Type', 'text/html');
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <title>Error</title>
+        <script>
+          window.opener.postMessage({
+            type: "X_OAUTH_ERROR",
+            error: "Error al conectar la cuenta"
+          }, "${process.env.FRONTEND_URL}");
+          window.close();
+        </script>
+      </head>
+      <body>
+        <p>Error al conectar. Esta ventana se cerrará.</p>
+      </body>
+      </html>
+    `);
   }
+}
 }
