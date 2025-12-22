@@ -2,6 +2,7 @@ import { Router } from "express";
 import { XAuthController } from "../controllers/xAuth.controller";
 import { XPostController } from "../controllers/xPost.controller";
 import multer from "multer";
+import { XPublicationsController } from "../controllers/xPublications.controller"
 
 // import { authMiddleware } from "../../auth/middlewares/auth.middleware";
 
@@ -18,27 +19,22 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage })
 
-/**
- * 🔐 Iniciar OAuth de X
- * Crea client nuevo (social_identity = X)
- */
+/**🔐 Iniciar OAuth de X */
 router.post("/auth", XAuthController.auth);
 
-/**
- * 🔁 Callback OAuth de X
- */
+/**🔁 Callback OAuth de X */
 router.get("/callback", XAuthController.callback);
 
-/**
- * 🐦 Publicar en X
- * Requiere cuenta X vinculada
- */
-
+/** 🐦 Publicar en X */
 router.post(
   "/posts",
   upload.single("media"),
   XPostController.create
 )
 
+/** 📄 Listar publicaciones en X */
+router.get("/", XPublicationsController.list)
+/** 📄 Detalle de una publicación en X */
+router.get("/:id", XPublicationsController.detail)
 
 export default router;

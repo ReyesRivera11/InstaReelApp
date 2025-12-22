@@ -43,3 +43,16 @@ export interface PaginatedReels {
   hasNext: boolean;
   hasPrev: boolean;
 }
+
+export interface PaginatedXPublications {
+  publications: Reels[];
+  total: number;
+  page?: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+export type PaginatedAnyPublications =
+  | PaginatedReels
+  | PaginatedXPublications;

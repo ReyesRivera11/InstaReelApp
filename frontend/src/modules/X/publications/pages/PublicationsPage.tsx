@@ -2,16 +2,17 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type {
-  Reels,           // Cambiar 
-  ReelsFilters,    
-  PaginatedReels,  
+  Reels, // Cambiar
+  ReelsFilters,
+  PaginatedAnyPublications,
+  PaginatedXPublications
 } from "../../../../core/types";
 
 import { AlertCircle, CheckCircle, X, RefreshCw } from "lucide-react";
 import { useApp } from "../../../../shared/hooks/useApp";
 import { Alert, Button } from "../../../../shared/components/ui";
 import { PublicationDetailModal } from "../components/PublicationDetailModal";
-import { appReelss } from "../../../../shared/services/api/reels/apiPublications";
+import { apiXPublications } from "../../../../shared/services/api/x/apiXPublications";
 
 const XLogo = ({ className = "w-6 h-6" }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
@@ -64,6 +65,13 @@ const PublicationsPageX = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
+  const isXPublicationsResponse = (
+    response: PaginatedAnyPublications
+  ): response is PaginatedXPublications => {
+    return "publications" in response;
+  };
+
+
   const loadPublications = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -78,13 +86,25 @@ const PublicationsPageX = () => {
       if (debouncedSearchTerm) filters.search = debouncedSearchTerm;
       if (statusFilter !== "all") filters.status = statusFilter as "SCHEDULED" | "PUBLISHED";
 
-      const response: PaginatedReels = await appReelss.getReelss(filters);
-      if (response.reels && Array.isArray(response.reels)) {
-        setPublications(response.reels);
-        setTotalPages(response.totalPages);
-        setTotalPublications(response.total);
-        setHasNext(response.hasNext);
-        setHasPrev(response.hasPrev);
+      // ✅ X BACKEND: GET /api/x  (tu XRouter general)
+      const response: PaginatedAnyPublications = await apiXPublications.getPublications(filters);
+
+
+      // ✅ Soporta ambos formatos de respuesta:
+      // - legacy: { reels: [], total, totalPages, hasNext, hasPrev }
+      // - x:      { publications: [], total, totalPages, hasNext, hasPrev }
+
+      const list = isXPublicationsResponse(response)
+        ? response.publications
+        : response.reels;
+
+
+      if (Array.isArray(list)) {
+        setPublications(list);
+        setTotalPages(Number(response?.totalPages ?? 1));
+        setTotalPublications(Number(response?.total ?? list.length ?? 0));
+        setHasNext(Boolean(response?.hasNext));
+        setHasPrev(Boolean(response?.hasPrev));
       } else {
         setPublications([]);
         setError("Error al cargar las publicaciones");
@@ -119,6 +139,7 @@ const PublicationsPageX = () => {
     } else {
       loadPublications();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchTerm, statusFilter]);
 
   const getScheduledDate = (pub: Reels): string | undefined => {
@@ -127,10 +148,10 @@ const PublicationsPageX = () => {
 
   const sortedPublications = Array.isArray(publications)
     ? [...publications].sort((a, b) => {
-        const dateA = getScheduledDate(a) ? new Date(getScheduledDate(a)!).getTime() : 0;
-        const dateB = getScheduledDate(b) ? new Date(getScheduledDate(b)!).getTime() : 0;
-        return dateB - dateA;
-      })
+      const dateA = getScheduledDate(a) ? new Date(getScheduledDate(a)!).getTime() : 0;
+      const dateB = getScheduledDate(b) ? new Date(getScheduledDate(b)!).getTime() : 0;
+      return dateB - dateA;
+    })
     : [];
 
   const getDaysInMonth = (date: Date) => {
@@ -203,9 +224,7 @@ const PublicationsPageX = () => {
     const weekDays = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
     for (let i = 0; i < startDayOfWeek; i++) {
-      days.push(
-        <div key={`empty-${i}`} className="min-h-32 p-2 border border-border bg-muted/30"></div>
-      );
+      days.push(<div key={`empty-${i}`} className="min-h-32 p-2 border border-border bg-muted/30"></div>);
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
@@ -216,7 +235,8 @@ const PublicationsPageX = () => {
       days.push(
         <div
           key={day}
-          className={`min-h-32 p-2 border border-border bg-card hover:bg-accent/50 transition-colors ${isToday ? "ring-2 ring-black" : ""}`}
+          className={`min-h-32 p-2 border border-border bg-card hover:bg-accent/50 transition-colors ${isToday ? "ring-2 ring-black" : ""
+            }`}
         >
           <div className={`text-sm mb-2 ${isToday ? "text-black font-bold" : "text-muted-foreground"}`}>
             {day}
@@ -226,27 +246,20 @@ const PublicationsPageX = () => {
               <div
                 key={pub.id}
                 onClick={() => handleViewDetails(pub)}
-                className={`text-xs p-2 rounded-md border-l-4 cursor-pointer hover:scale-105 transition-transform ${
-                  pub.status === "SCHEDULED"
-                    ? "bg-yellow-50 border-yellow-500 hover:bg-yellow-100"
-                    : "bg-green-50 border-green-500 hover:bg-green-100"
-                }`}
+                className={`text-xs p-2 rounded-md border-l-4 cursor-pointer hover:scale-105 transition-transform ${pub.status === "SCHEDULED"
+                  ? "bg-yellow-50 border-yellow-500 hover:bg-yellow-100"
+                  : "bg-green-50 border-green-500 hover:bg-green-100"
+                  }`}
               >
-                <p className="line-clamp-1 font-medium">
-                  {pub.description || pub.title || "Sin contenido"}
-                </p>
+                <p className="line-clamp-1 font-medium">{pub.description || pub.title || "Sin contenido"}</p>
                 <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
                   {pub.clientName || "Cuenta desconocida"}
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {formatPublicationTime(pub)}
-                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">{formatPublicationTime(pub)}</p>
               </div>
             ))}
             {pubs.length > 3 && (
-              <div className="text-xs text-muted-foreground text-center py-1">
-                +{pubs.length - 3} más
-              </div>
+              <div className="text-xs text-muted-foreground text-center py-1">+{pubs.length - 3} más</div>
             )}
           </div>
         </div>
@@ -262,9 +275,7 @@ const PublicationsPageX = () => {
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-0 border border-border">
-          {days}
-        </div>
+        <div className="grid grid-cols-7 gap-0 border border-border">{days}</div>
       </div>
     );
   };
@@ -313,7 +324,10 @@ const PublicationsPageX = () => {
 
           {startPage > 1 && (
             <>
-              <button onClick={() => setCurrentPage(1)} className="px-3 py-2 border border-border rounded-lg hover:bg-accent text-sm">
+              <button
+                onClick={() => setCurrentPage(1)}
+                className="px-3 py-2 border border-border rounded-lg hover:bg-accent text-sm"
+              >
                 1
               </button>
               {startPage > 2 && <span className="px-2 text-muted-foreground">...</span>}
@@ -324,11 +338,8 @@ const PublicationsPageX = () => {
             <button
               key={page}
               onClick={() => setCurrentPage(page)}
-              className={`px-3 py-2 border rounded-lg text-sm transition-colors ${
-                currentPage === page
-                  ? "bg-black text-white border-black"
-                  : "border-border hover:bg-accent"
-              }`}
+              className={`px-3 py-2 border rounded-lg text-sm transition-colors ${currentPage === page ? "bg-black text-white border-black" : "border-border hover:bg-accent"
+                }`}
             >
               {page}
             </button>
@@ -337,7 +348,10 @@ const PublicationsPageX = () => {
           {endPage < totalPages && (
             <>
               {endPage < totalPages - 1 && <span className="px-2 text-muted-foreground">...</span>}
-              <button onClick={() => setCurrentPage(totalPages)} className="px-3 py-2 border border-border rounded-lg hover:bg-accent text-sm">
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                className="px-3 py-2 border border-border rounded-lg hover:bg-accent text-sm"
+              >
                 {totalPages}
               </button>
             </>
@@ -386,11 +400,23 @@ const PublicationsPageX = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "SCHEDULED":
-        return <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">PROGRAMADO</span>;
+        return (
+          <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
+            PROGRAMADO
+          </span>
+        );
       case "PUBLISHED":
-        return <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">PUBLICADO</span>;
+        return (
+          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+            PUBLICADO
+          </span>
+        );
       default:
-        return <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">{status}</span>;
+        return (
+          <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
+            {status}
+          </span>
+        );
     }
   };
 
@@ -398,8 +424,16 @@ const PublicationsPageX = () => {
 
   return (
     <>
-      {error && <Alert variant="error" icon={<AlertCircle className="w-5 h-5" />}>{error}</Alert>}
-      {success && <Alert variant="success" icon={<CheckCircle className="w-5 h-5" />}>¡Publicaciones actualizadas!</Alert>}
+      {error && (
+        <Alert variant="error" icon={<AlertCircle className="w-5 h-5" />}>
+          {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert variant="success" icon={<CheckCircle className="w-5 h-5" />}>
+          ¡Publicaciones actualizadas!
+        </Alert>
+      )}
 
       <div className="space-y-6 p-4 sm:p-6 lg:p-8">
         <div className="flex items-center justify-between">
@@ -428,9 +462,8 @@ const PublicationsPageX = () => {
             <div className="flex gap-2 bg-muted p-1 rounded-lg">
               <button
                 onClick={() => setViewMode("table")}
-                className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors ${
-                  viewMode === "table" ? "bg-background shadow-sm" : "hover:bg-background/50"
-                }`}
+                className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors ${viewMode === "table" ? "bg-background shadow-sm" : "hover:bg-background/50"
+                  }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <rect x="3" y="3" width="7" height="7" strokeWidth="2" />
@@ -442,9 +475,8 @@ const PublicationsPageX = () => {
               </button>
               <button
                 onClick={() => setViewMode("calendar")}
-                className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors ${
-                  viewMode === "calendar" ? "bg-background shadow-sm" : "hover:bg-background/50"
-                }`}
+                className={`px-3 py-2 rounded-md text-sm flex items-center gap-2 transition-colors ${viewMode === "calendar" ? "bg-background shadow-sm" : "hover:bg-background/50"
+                  }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeWidth="2" />
@@ -511,12 +543,8 @@ const PublicationsPageX = () => {
             {viewMode === "table" && (
               <div className="bg-card rounded-lg border border-border">
                 <div className="p-6 border-b border-border">
-                  <h2 className="text-xl font-semibold">
-                    {totalPublications} Publicaciones
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    Listado completo de todas tus publicaciones en X
-                  </p>
+                  <h2 className="text-xl font-semibold">{totalPublications} Publicaciones</h2>
+                  <p className="text-sm text-muted-foreground">Listado completo de todas tus publicaciones en X</p>
                 </div>
                 <div className="p-6">
                   {sortedPublications.length === 0 ? (
@@ -545,13 +573,9 @@ const PublicationsPageX = () => {
                             <tr key={pub.id} className="border-b border-border hover:bg-accent/50">
                               <td className="p-4">
                                 <div>
-                                  <p className="line-clamp-2 font-medium">
-                                    {pub.title || "Sin título"}
-                                  </p>
+                                  <p className="line-clamp-2 font-medium">{pub.title || "Sin título"}</p>
                                   {pub.description && (
-                                    <p className="text-sm text-muted-foreground line-clamp-1 mt-1">
-                                      {pub.description}
-                                    </p>
+                                    <p className="text-sm text-muted-foreground line-clamp-1 mt-1">{pub.description}</p>
                                   )}
                                 </div>
                               </td>
@@ -566,10 +590,7 @@ const PublicationsPageX = () => {
                               </td>
                               <td className="p-4">{getStatusBadge(pub.status)}</td>
                               <td className="p-4 text-right">
-                                <Button
-                                  onClick={() => handleViewDetails(pub)}
-                                  className="bg-black hover:bg-gray-800 text-white"
-                                >
+                                <Button onClick={() => handleViewDetails(pub)} className="bg-black hover:bg-gray-800 text-white">
                                   Ver detalles
                                 </Button>
                               </td>
@@ -592,9 +613,7 @@ const PublicationsPageX = () => {
                       <h2 className="text-xl font-semibold capitalize">
                         {currentDate.toLocaleDateString("es-ES", { month: "long", year: "numeric" })}
                       </h2>
-                      <p className="text-sm text-muted-foreground">
-                        Vista de calendario de publicaciones programadas en X
-                      </p>
+                      <p className="text-sm text-muted-foreground">Vista de calendario de publicaciones programadas en X</p>
                     </div>
                     <div className="flex gap-2">
                       <button
