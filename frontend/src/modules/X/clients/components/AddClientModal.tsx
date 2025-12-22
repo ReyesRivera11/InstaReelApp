@@ -58,25 +58,25 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
    */
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return
+      if (event.origin !== window.location.origin) return;
 
       if (event.data?.type === "X_OAUTH_SUCCESS") {
-        setSuccess(true)
+        setSuccess(true);
         setTimeout(() => {
-          handleReset()
-          setOauthCompleted(true)
-        }, 1500)
+          handleReset();
+          setOauthCompleted(true);
+          onClose();  // Cierra el modal
+        }, 1500);
       }
 
       if (event.data?.type === "X_OAUTH_ERROR") {
-        setError(event.data.error || "Error en la autenticación con X")
+        setError(event.data.error || "Error en la autenticación con X");
       }
-    }
+    };
 
-    window.addEventListener("message", handleMessage)
-    return () => window.removeEventListener("message", handleMessage)
-  }, [setOauthCompleted])
-
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [setOauthCompleted, onClose]);
   /* ===============================
      Validaciones
   ================================ */
