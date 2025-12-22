@@ -1,4 +1,4 @@
-export interface Reels  {
+export interface Reels {
   id: number;
   client_id: number;
   title: string;
@@ -32,7 +32,7 @@ export interface ReelsFilters {
   status?: "SCHEDULED" | "PUBLISHED";
   page?: number;
   limit?: number;
-  social_identity?: "X"| "INSTAGRAM" | "FACEBOOK";
+  social_identity?: "X" | "INSTAGRAM" | "FACEBOOK";
 }
 
 export interface PaginatedReels {
@@ -56,3 +56,22 @@ export interface PaginatedXPublications {
 export type PaginatedAnyPublications =
   | PaginatedReels
   | PaginatedXPublications;
+
+export interface XPublication {
+  id: number;
+  client_id: number;
+  clientName?: string;
+
+  text: string;
+
+  status: "SCHEDULED" | "PUBLISHED" | "FAILED";
+
+  scheduled_at?: string | null;
+  published_at?: string | null;
+
+  media_url?: string | null;
+  tweet_id?: string | null;
+
+  created_at: string;
+  error_message?: string | null;
+}

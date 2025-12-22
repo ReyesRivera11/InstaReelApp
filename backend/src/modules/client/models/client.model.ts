@@ -11,7 +11,7 @@ export class ClientModel {
     const client = await prisma.client.findUnique({
       where: { id },
     });
-
+    console.log(client);
     return client;
   }
 

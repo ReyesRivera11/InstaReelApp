@@ -50,7 +50,7 @@ model reels {
   scheduled_date     DateTime?
   container_media_id String?        @unique
   created_at         DateTime       @default(now())
-  client             client         @relation(fields: [client_id], references: [id])
+  client             client         @relation(fields: [client_id], references: [id], onDelete: Cascade)
 }
 
 model tiktok_account {
@@ -62,7 +62,7 @@ model tiktok_account {
   expires_at    DateTime
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
-  client        client   @relation(fields: [client_id], references: [id])
+  client        client   @relation(fields: [client_id], references: [id], onDelete: Cascade)
 }
 
 model tiktok_reels {
@@ -86,7 +86,7 @@ model tiktok_reels {
   brand_self        Boolean          @default(false)
   brand_third_party Boolean          @default(false)
   is_commercial     Boolean          @default(false)
-  client            client           @relation(fields: [client_id], references: [id])
+  client            client           @relation(fields: [client_id], references: [id], onDelete: Cascade)
 
   @@index([status, scheduled_at])
 }
@@ -101,13 +101,13 @@ model x_account {
   expires_at    DateTime
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
-  client        client   @relation(fields: [client_id], references: [id])
+  client        client   @relation(fields: [client_id], references: [id], onDelete: Cascade)
 }
 
 model x_posts {
   id            Int          @id @default(autoincrement())
   client_id     Int
-  client        client       @relation(fields: [client_id], references: [id])
+  client        client       @relation(fields: [client_id], references: [id], onDelete: Cascade)
 
   text          String       @db.VarChar(280)
 
