@@ -6,6 +6,7 @@ import { PORT } from './shared/config/env';
 import router from './shared/routes/index';
 import { errorHandlerMiddleware } from './shared/middlewares/errorHandler';
 import { corsMiddleware } from './shared/middlewares/cors';
+import { startXPostCron } from "./modules/x/cron/xPost.cron"
 
 const app = express();
 
@@ -24,6 +25,8 @@ app.get('/healthcheck', (_req: Request, res: Response) => {
 app.use('/api', router);
 
 app.use(errorHandlerMiddleware);
+
+startXPostCron();
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

@@ -134,17 +134,18 @@ export class XPostService {
         let mediaType: XMediaType | null = null
 
         try {
-            // Si hay media: subir a storage y guardar URL
+            // 📦 Subir media a Supabase Storage
             if (media) {
                 mediaType = detectMediaType(media.mimetype)
                 mediaUrl = await uploadToSupabaseStorage(media)
             }
 
-            // Siempre limpiar archivo temporal local
+            // 🧹 Limpiar archivo temporal local
             if (media?.path) {
                 await fsp.unlink(media.path).catch(() => { })
             }
 
+            // ✅ Crear post programado (status se asigna internamente)
             return await XPostsModel.create({
                 client_id,
                 text,
@@ -153,7 +154,7 @@ export class XPostService {
                 scheduled_at,
             })
         } catch (error: any) {
-            // limpiar aunque haya error
+            // 🧹 Limpiar aunque haya error
             if (media?.path) {
                 await fsp.unlink(media.path).catch(() => { })
             }
@@ -168,6 +169,7 @@ export class XPostService {
             })
         }
     }
+
 
     /**
      * Se usa por CRON: toma un post DB (con media_url ya externa)

@@ -17,7 +17,7 @@ export const XPostsModel = {
                 media_url: data.media_url ?? null,
                 media_type: data.media_type ?? null,
                 scheduled_at: data.scheduled_at,
-                status: XPostStatus.SCHEDULED,
+                status: XPostStatus.SCHEDULED, // ✅ aquí está bien
             },
         })
     },

@@ -11,4 +11,5 @@ export const xPostSchema = z.object({
     publish_now: z
         .union([z.literal(true), z.literal("true")])
         .optional(),
+
 })
