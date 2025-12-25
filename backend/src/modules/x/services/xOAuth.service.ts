@@ -160,28 +160,37 @@ export class XOAuthService {
 
         // 3) Guardar en x_account
         // ✅ upsert para evitar error si ya existía (client_id es unique)
-        await prisma.x_account.upsert({
+        const existingAccount = await prisma.x_account.findFirst({
             where: { client_id: clientId },
-            update: {
-                x_user_id: meData.data.id,
-                username: meData.data.username,
-                access_token: tokenData.access_token,
-                refresh_token: tokenData.refresh_token ?? null,
-                expires_at: new Date(Date.now() + tokenData.expires_in * 1000),
-            },
-            create: {
-                client_id: clientId,
-                x_user_id: meData.data.id,
-                username: meData.data.username,
-                access_token: tokenData.access_token,
-                refresh_token: tokenData.refresh_token ?? null,
-                expires_at: new Date(Date.now() + tokenData.expires_in * 1000),
-            },
         });
+
+        if (existingAccount) {
+            await prisma.x_account.update({
+                where: { id: existingAccount.id },
+                data: {
+                    x_user_id: meData.data.id,
+                    username: meData.data.username,
+                    access_token: tokenData.access_token,
+                    refresh_token: tokenData.refresh_token ?? null,
+                    expires_at: new Date(Date.now() + tokenData.expires_in * 1000),
+                },
+            });
+        } else {
+            await prisma.x_account.create({
+                data: {
+                    client_id: clientId,
+                    x_user_id: meData.data.id,
+                    username: meData.data.username,
+                    access_token: tokenData.access_token,
+                    refresh_token: tokenData.refresh_token ?? null,
+                    expires_at: new Date(Date.now() + tokenData.expires_in * 1000),
+                },
+            });
+        }
     }
 
     static async refreshToken(clientId: number): Promise<string> {
-        const account = await prisma.x_account.findUnique({
+        const account = await prisma.x_account.findFirst({
             where: { client_id: clientId },
         });
 
@@ -247,7 +256,7 @@ export class XOAuthService {
             expires_in: number;
         };
 
-        await prisma.x_account.update({
+        await prisma.x_account.updateMany({
             where: { client_id: clientId },
             data: {
                 access_token: data.access_token,

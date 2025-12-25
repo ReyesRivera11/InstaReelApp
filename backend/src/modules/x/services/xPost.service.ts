@@ -1,65 +1,62 @@
-import fs from "fs"
-import fsp from "fs/promises"
-import path from "path"
-import axios from "axios"
-import type { Multer } from "multer"
-import { XMediaType } from "@prisma/client"
+import fs from "fs";
+import fsp from "fs/promises";
+import path from "path";
+import axios from "axios";
+import OAuth from "oauth-1.0a";
+import crypto from "crypto";
+import { XMediaType } from "@prisma/client";
 
-import { XPostsModel } from "../models/xPosts.model"
-import { getXAccessTokenByClient } from "./xTokens.service"
+import { XPostsModel } from "../models/xPosts.model";
+import { XTokensService } from "./xTokens.service";
+import { XMediaService } from "./xMedia.service";
 
-import { supabaseAdmin } from "../../../shared/lib/supabaseAdmin"
-import { AppError } from "../../../core/errors/AppError"
-import { HttpCode } from "../../../shared/enums/HttpCode"
+import { supabaseAdmin } from "../../../shared/lib/supabaseAdmin";
+import { AppError } from "../../../core/errors/AppError";
+import { HttpCode } from "../../../shared/enums/HttpCode";
 
 /* ============================
-   Constantes X API
+   OAuth 1.0a client (X)
 ============================ */
-const X_API = "https://api.twitter.com/2"
+const oauth = new OAuth({
+    consumer: {
+        key: process.env.X_API_KEY!,
+        secret: process.env.X_API_SECRET!,
+    },
+    signature_method: "HMAC-SHA1",
+    hash_function(baseString, key) {
+        return crypto.createHmac("sha1", key).update(baseString).digest("base64");
+    },
+});
+
+/* ============================
+   Constantes
+============================ */
+const X_API_V2 = "https://api.twitter.com/2";
+const X_API_V1 = "https://api.twitter.com/1.1";
 
 /* ============================
    Helpers
 ============================ */
 const detectMediaType = (mimetype: string): XMediaType =>
-    mimetype.startsWith("video") ? XMediaType.VIDEO : XMediaType.IMAGE
-
-/**
- * Construye el texto final del tweet incluyendo URL externa si hay media.
- * Asegura límite 280 (aprox). Nota: X cuenta URLs con longitud fija, pero aquí
- * hacemos un recorte seguro para no pasar el límite de UI.
- */
-const buildTweetText = (text: string, mediaUrl?: string | null) => {
-    if (!mediaUrl) return text.trim()
-
-    const suffix = `\n\n${mediaUrl}`
-
-    // recorte simple a 280 caracteres (suficiente para evitar errores del lado UI)
-    const baseMax = 280 - suffix.length
-    const trimmed = text.trim()
-
-    if (baseMax <= 0) return mediaUrl // extremo raro
-    if (trimmed.length <= baseMax) return trimmed + suffix
-
-    return trimmed.slice(0, Math.max(0, baseMax - 1)).trimEnd() + "…" + suffix
-}
+    mimetype.startsWith("video") ? XMediaType.VIDEO : XMediaType.IMAGE;
 
 /* ============================
-   Subir media a Supabase Storage
+   Supabase upload
 ============================ */
 const uploadToSupabaseStorage = async (file: Express.Multer.File) => {
-    const bucket = process.env.SUPABASE_STORAGE_BUCKET || "x-media"
-    const ext = path.extname(file.originalname || "")
-    const safeExt = ext && ext.length <= 8 ? ext : ""
-    const objectPath = `x/${Date.now()}-${file.filename}${safeExt}`
+    const bucket = process.env.SUPABASE_STORAGE_BUCKET || "x-media";
+    const ext = path.extname(file.originalname || "");
+    const safeExt = ext && ext.length <= 8 ? ext : "";
+    const objectPath = `x/${Date.now()}-${file.filename}${safeExt}`;
 
-    const buffer = fs.readFileSync(file.path)
+    const buffer = fs.readFileSync(file.path);
 
     const { error } = await supabaseAdmin.storage
         .from(bucket)
         .upload(objectPath, buffer, {
             contentType: file.mimetype,
             upsert: false,
-        })
+        });
 
     if (error) {
         throw new AppError({
@@ -67,32 +64,30 @@ const uploadToSupabaseStorage = async (file: Express.Multer.File) => {
             httpCode: HttpCode.INTERNAL_SERVER_ERROR,
             description: "Error al subir archivo a Supabase Storage",
             details: { message: error.message, bucket, objectPath },
-        })
+        });
     }
 
-    // URL pública (requiere bucket público)
-    const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(objectPath)
+    const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(objectPath);
 
-    const publicUrl = data?.publicUrl
-    if (!publicUrl) {
+    if (!data?.publicUrl) {
         throw new AppError({
             name: "SupabasePublicUrlError",
             httpCode: HttpCode.INTERNAL_SERVER_ERROR,
             description: "No se pudo obtener URL pública del archivo",
             details: { bucket, objectPath },
-        })
+        });
     }
 
-    return publicUrl
-}
+    return data.publicUrl;
+};
 
 /* ============================
-   Publicar Tweet (solo /2/tweets)
+   Tweet texto (OAuth 2.0)
 ============================ */
-const publishPost = async (accessToken: string, text: string) => {
+const publishTextTweet = async (accessToken: string, text: string) => {
     try {
-        return await axios.post(
-            `${X_API}/tweets`,
+        const resp = await axios.post(
+            `${X_API_V2}/tweets`,
             { text },
             {
                 headers: {
@@ -100,146 +95,158 @@ const publishPost = async (accessToken: string, text: string) => {
                     "Content-Type": "application/json",
                 },
             }
-        )
+        );
+
+        return resp.data.data.id;
     } catch (error: any) {
         throw new AppError({
-            name: "XPublishError",
+            name: "XPublishTextError",
             httpCode: HttpCode.INTERNAL_SERVER_ERROR,
-            description: "Error al publicar el post en X",
+            description: "Error al publicar tweet de texto en X",
             details: {
-                message: error?.message,
                 status: error?.response?.status,
                 response: error?.response?.data,
             },
-        })
+        });
     }
-}
+};
 
 /* ============================
-   Servicio principal (CLASE)
+   Servicio principal
 ============================ */
 export class XPostService {
+    /* ============================
+       Crear post programado
+    ============================ */
     static async schedule({
         client_id,
         text,
         scheduled_at,
         media,
     }: {
-        client_id: number
-        text: string
-        scheduled_at: Date
-        media?: Express.Multer.File
+        client_id: number;
+        text: string;
+        scheduled_at: Date;
+        media?: Express.Multer.File;
     }) {
-        let mediaUrl: string | null = null
-        let mediaType: XMediaType | null = null
+        let mediaUrl: string | null = null;
+        let mediaType: XMediaType | null = null;
 
         try {
-            // 📦 Subir media a Supabase Storage
             if (media) {
-                mediaType = detectMediaType(media.mimetype)
-                mediaUrl = await uploadToSupabaseStorage(media)
+                mediaType = detectMediaType(media.mimetype);
+                mediaUrl = await uploadToSupabaseStorage(media);
             }
 
-            // 🧹 Limpiar archivo temporal local
             if (media?.path) {
-                await fsp.unlink(media.path).catch(() => { })
+                await fsp.unlink(media.path).catch(() => { });
             }
 
-            // ✅ Crear post programado (status se asigna internamente)
             return await XPostsModel.create({
                 client_id,
                 text,
                 media_url: mediaUrl,
                 media_type: mediaType,
                 scheduled_at,
-            })
+            });
         } catch (error: any) {
-            // 🧹 Limpiar aunque haya error
             if (media?.path) {
-                await fsp.unlink(media.path).catch(() => { })
+                await fsp.unlink(media.path).catch(() => { });
             }
 
-            if (error instanceof AppError) throw error
+            if (error instanceof AppError) throw error;
 
             throw new AppError({
                 name: "XPostScheduleError",
                 httpCode: HttpCode.INTERNAL_SERVER_ERROR,
                 description: "Error al programar el post en X",
                 details: { message: error?.message },
-            })
+            });
         }
     }
 
+    /* ============================
+       Publicar (CRON / inmediato)
+       Decide texto vs media
+    ============================ */
+    static async publish(post: any): Promise<string> {
+        if (post.media_url) {
+            return this.publishWithMedia(post);
+        }
 
-    /**
-     * Se usa por CRON: toma un post DB (con media_url ya externa)
-     * y lo publica como texto + URL
-     */
-    static async publishNow(post: any): Promise<string> {
-        const accessToken = await getXAccessTokenByClient(post.client_id)
-        const tweetText = buildTweetText(post.text, post.media_url ?? null)
-
-        const response = await publishPost(accessToken, tweetText)
-        return response.data.data.id
+        return this.publishText(post);
     }
 
-    /**
-     * Publicación inmediata:
-     * - si hay media: se sube a Supabase Storage y se publica URL junto al texto
-     * - se guarda DB como PUBLISHED
-     */
-    static async publishImmediate({
-        client_id,
-        text,
-        media,
-    }: {
-        client_id: number
-        text: string
-        media?: Express.Multer.File
-    }) {
-        const accessToken = await getXAccessTokenByClient(client_id)
+    /* ============================
+       Tweet solo texto (OAuth 2.0)
+    ============================ */
+    static async publishText(post: any): Promise<string> {
+        const token = await XTokensService.getOAuth2ByClient(post.client_id);
+        const accessToken =
+            typeof token === "string" ? token : token.access_token;
 
-        let mediaUrl: string | null = null
-        let mediaType: XMediaType | null = null
+        const tweetId = await publishTextTweet(accessToken!, post.text);
+
+        await XPostsModel.markPublished(post.id, tweetId);
+        return tweetId;
+    }
+
+    /* ============================
+       Tweet con media (OAuth 1.0a)
+    ============================ */
+    static async publishWithMedia(post: any): Promise<string> {
+        // 1️⃣ OAuth 1.0a
+        const oauth1 = await XTokensService.getOAuth1ByClient(post.client_id);
+
+        // 2️⃣ Subir media a X
+        const media = await XMediaService.uploadFromUrl({
+            mediaUrl: post.media_url,
+            mimeType: post.media_type === XMediaType.VIDEO ? "video/mp4" : "image/jpeg",
+            creds: {
+                oauth1_token: oauth1.oauth1_token,
+                oauth1_token_secret: oauth1.oauth1_token_secret,
+            },
+        });
+
+        // 3️⃣ Publicar tweet con media_ids
+        const url = `${X_API_V1}/statuses/update.json`;
+
+        const body = new URLSearchParams();
+        body.set("status", post.text);
+        body.set("media_ids", media.media_id_string);
+
+        const oauthHeaders = oauth.toHeader(
+            oauth.authorize(
+                { url, method: "POST" },
+                {
+                    key: oauth1.oauth1_token,
+                    secret: oauth1.oauth1_token_secret,
+                }
+            )
+        );
+
+        const headers: Record<string, string> = {
+            Authorization: oauthHeaders.Authorization,
+            "Content-Type": "application/x-www-form-urlencoded",
+        };
 
         try {
-            if (media) {
-                mediaType = detectMediaType(media.mimetype)
-                mediaUrl = await uploadToSupabaseStorage(media)
-            }
+            const resp = await axios.post(url, body.toString(), { headers });
 
-            // limpiar archivo temporal local
-            if (media?.path) {
-                await fsp.unlink(media.path).catch(() => { })
-            }
+            const tweetId = resp.data.id_str;
+            await XPostsModel.markPublished(post.id, tweetId);
 
-            const tweetText = buildTweetText(text, mediaUrl)
-            const response = await publishPost(accessToken, tweetText)
-
-            const post = await XPostsModel.create({
-                client_id,
-                text,
-                media_url: mediaUrl,
-                media_type: mediaType,
-                scheduled_at: new Date(),
-            })
-
-            await XPostsModel.markPublished(post.id, response.data.data.id)
-            return post
+            return tweetId;
         } catch (error: any) {
-            // limpiar aunque haya error
-            if (media?.path) {
-                await fsp.unlink(media.path).catch(() => { })
-            }
-
-            if (error instanceof AppError) throw error
-
             throw new AppError({
-                name: "XPostImmediateError",
+                name: "XPublishMediaError",
                 httpCode: HttpCode.INTERNAL_SERVER_ERROR,
-                description: "Error al publicar inmediatamente en X",
-                details: { message: error?.message },
-            })
+                description: "Error al publicar tweet con media en X",
+                details: {
+                    status: error?.response?.status,
+                    response: error?.response?.data,
+                },
+            });
         }
     }
 }

@@ -3,6 +3,7 @@ import { XAuthController } from "../controllers/xAuth.controller";
 import { XPostController } from "../controllers/xPost.controller";
 import multer from "multer";
 import { XPublicationsController } from "../controllers/xPublications.controller"
+import { XOAuth1Controller } from "../controllers/xOAuth1.controller";
 
 // import { authMiddleware } from "../../auth/middlewares/auth.middleware";
 
@@ -36,5 +37,9 @@ router.post(
 router.get("/", XPublicationsController.list)
 /** 📄 Detalle de una publicación en X */
 router.get("/:id", XPublicationsController.detail)
+
+router.get("/oauth1/connect", XOAuth1Controller.connect);
+
+router.get("/oauth1/callback", XOAuth1Controller.callback);
 
 export default router;

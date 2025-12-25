@@ -35,8 +35,9 @@ model client {
   reels            reels[]
   tiktok_account   tiktok_account?
   tiktok_reels     tiktok_reels[]
-  x_account        x_account?
+  x_account        x_account?      @relation(fields: [x_accountId], references: [id])
   x_posts          x_posts[]
+  x_accountId      Int?
 }
 
 model reels {
@@ -92,37 +93,59 @@ model tiktok_reels {
 }
 
 model x_account {
-  id            Int      @id @default(autoincrement())
-  client_id     Int      @unique
-  x_user_id     String
-  username      String
+  id        Int    @id @default(autoincrement())
+  client_id Int
+  x_user_id String
+  username  String
+
+  // ==========================
+  // OAuth 2.0 (EXISTENTE)
+  // ==========================
   access_token  String
   refresh_token String?
-  expires_at    DateTime
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
-  client        client   @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  expires_at    DateTime?
+  scope         String?
+
+  // ==========================
+  // OAuth 1.0a (NUEVO)
+  // ==========================
+  oauth1_token        String?
+  oauth1_token_secret String?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  client     client[]
+  @@unique([client_id, x_user_id])
 }
 
 model x_posts {
-  id            Int          @id @default(autoincrement())
-  client_id     Int
-  client        client       @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  id        Int    @id @default(autoincrement())
+  client_id Int
+  client    client @relation(fields: [client_id], references: [id], onDelete: Cascade)
 
-  text          String       @db.VarChar(280)
+  text String @db.VarChar(280)
 
-  /* 👇 NUEVO */
-  media_url     String?      @db.VarChar(500)
-  media_type    XMediaType?
+  /**
+   * 👇 NUEVO
+   */
+  media_url  String?     @db.VarChar(500)
+  media_type XMediaType?
 
-  status        XPostStatus  @default(SCHEDULED)
+  status XPostStatus @default(SCHEDULED)
 
-  tweet_id      String?      @unique
+  tweet_id      String?   @unique
   scheduled_at  DateTime
   published_at  DateTime?
   error_message String?
 
-  created_at    DateTime     @default(now())
+  created_at DateTime @default(now())
+}
+
+model x_oauth1_sessions {
+  oauth_token        String @id
+  oauth_token_secret String
+  client_id          Int
+  created_at         DateTime @default(now())
 }
 
 
@@ -150,7 +173,6 @@ enum XPostStatus {
   PUBLISHED
   FAILED
 }
-
 
 enum XMediaType {
   IMAGE
