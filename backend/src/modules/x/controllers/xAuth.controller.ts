@@ -53,41 +53,41 @@ export class XAuthController {
    * 🔁 Callback OAuth de X
    */
   static async callback(req: Request, res: Response, next: NextFunction) {
-  try {
-    const { code, state } = req.query;
-    if (!code || !state) {
-      throw new AppError({
-        httpCode: HttpCode.BAD_REQUEST,
-        description: "Missing code or state",
-      });
-    }
+    try {
+      const { code, state } = req.query;
+      if (!code || !state) {
+        throw new AppError({
+          httpCode: HttpCode.BAD_REQUEST,
+          description: "Missing code or state",
+        });
+      }
 
-    const clientId = Number(state);
-    if (isNaN(clientId)) {
-      throw new AppError({
-        httpCode: HttpCode.BAD_REQUEST,
-        description: "Invalid state (clientId)",
-      });
-    }
+      const clientId = Number(state);
+      if (isNaN(clientId)) {
+        throw new AppError({
+          httpCode: HttpCode.BAD_REQUEST,
+          description: "Invalid state (clientId)",
+        });
+      }
 
-    const codeVerifier = pkceStore.get(clientId);
-    if (!codeVerifier) {
-      throw new AppError({
-        httpCode: HttpCode.BAD_REQUEST,
-        description: "PKCE verifier not found or expired",
-      });
-    }
+      const codeVerifier = pkceStore.get(clientId);
+      if (!codeVerifier) {
+        throw new AppError({
+          httpCode: HttpCode.BAD_REQUEST,
+          description: "PKCE verifier not found or expired",
+        });
+      }
 
-    // Aquí está el punto crítico
-    console.log("🔵 Intentando intercambiar código por tokens para clientId:", clientId);
-    await XOAuthService.exchangeCode(clientId, code as string, codeVerifier);
-    console.log("🟢 Tokens intercambiados y cuenta guardada exitosamente");
+      // Aquí está el punto crítico
+      console.log("🔵 Intentando intercambiar código por tokens para clientId:", clientId);
+      await XOAuthService.exchangeCode(clientId, code as string, codeVerifier);
+      console.log("🟢 Tokens intercambiados y cuenta guardada exitosamente");
 
-    pkceStore.delete(clientId);
+      pkceStore.delete(clientId);
 
-    // ÉXITO
-    res.setHeader("Content-Type", "text/html");
-    return res.send(`
+      // ÉXITO
+      res.setHeader("Content-Type", "text/html");
+      return res.send(`
       <!DOCTYPE html>
       <html lang="es">
       <head>
@@ -105,11 +105,11 @@ export class XAuthController {
       <body><p>Éxito. Cerrando...</p></body>
       </html>
     `);
-  } catch (error) {
-    console.error("🔴 Error en callback de X:", error); // <--- Esto te dirá exactamente qué pasa
+    } catch (error) {
+      console.error("🔴 Error en callback de X:", error); // <--- Esto te dirá exactamente qué pasa
 
-    res.setHeader("Content-Type", "text/html");
-    return res.send(`
+      res.setHeader("Content-Type", "text/html");
+      return res.send(`
       <!DOCTYPE html>
       <html lang="es">
       <head>
@@ -127,6 +127,6 @@ export class XAuthController {
       <body><p>Error. Intenta de nuevo.</p></body>
       </html>
     `);
+    }
   }
-}
 }

@@ -35,9 +35,8 @@ model client {
   reels            reels[]
   tiktok_account   tiktok_account?
   tiktok_reels     tiktok_reels[]
-  x_account        x_account?      @relation(fields: [x_accountId], references: [id])
+  x_account      x_account?
   x_posts          x_posts[]
-  x_accountId      Int?
 }
 
 model reels {
@@ -93,29 +92,27 @@ model tiktok_reels {
 }
 
 model x_account {
-  id        Int    @id @default(autoincrement())
-  client_id Int
-  x_user_id String
-  username  String
+  id                   Int      @id @default(autoincrement())
 
-  // ==========================
-  // OAuth 2.0 (EXISTENTE)
-  // ==========================
-  access_token  String
-  refresh_token String?
-  expires_at    DateTime?
-  scope         String?
+  // 🔑 FK + UNIQUE → 1–1
+  client_id            Int      @unique
+  client               client  @relation(fields: [client_id], references: [id], onDelete: Cascade)
 
-  // ==========================
-  // OAuth 1.0a (NUEVO)
-  // ==========================
-  oauth1_token        String?
-  oauth1_token_secret String?
+  // identidad X
+  x_user_id            String
+  username             String
 
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-  client     client[]
-  @@unique([client_id, x_user_id])
+  // OAuth 2.0
+  access_token         String
+  refresh_token        String?
+  expires_at           DateTime?
+
+  // OAuth 1.0a
+  oauth1_token         String?
+  oauth1_token_secret  String?
+
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
 }
 
 model x_posts {
