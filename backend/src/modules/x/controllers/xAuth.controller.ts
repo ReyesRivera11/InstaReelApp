@@ -53,85 +53,78 @@ export class XAuthController {
    * 🔁 Callback OAuth de X
    */
   static async callback(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { code, state } = req.query;
+  try {
+    const { code, state } = req.query;
+    if (!code || !state) {
+      throw new AppError({
+        httpCode: HttpCode.BAD_REQUEST,
+        description: "Missing code or state",
+      });
+    }
 
-      if (!code || !state) {
-        throw new AppError({
-          httpCode: HttpCode.BAD_REQUEST,
-          description: "Missing code or state",
-        });
-      }
+    const clientId = Number(state);
+    if (isNaN(clientId)) {
+      throw new AppError({
+        httpCode: HttpCode.BAD_REQUEST,
+        description: "Invalid state (clientId)",
+      });
+    }
 
-      const clientId = Number(state);
+    const codeVerifier = pkceStore.get(clientId);
+    if (!codeVerifier) {
+      throw new AppError({
+        httpCode: HttpCode.BAD_REQUEST,
+        description: "PKCE verifier not found or expired",
+      });
+    }
 
-      if (isNaN(clientId)) {
-        throw new AppError({
-          httpCode: HttpCode.BAD_REQUEST,
-          description: "Invalid state (clientId)",
-        });
-      }
+    // Aquí está el punto crítico
+    console.log("🔵 Intentando intercambiar código por tokens para clientId:", clientId);
+    await XOAuthService.exchangeCode(clientId, code as string, codeVerifier);
+    console.log("🟢 Tokens intercambiados y cuenta guardada exitosamente");
 
-      const codeVerifier = pkceStore.get(clientId);
+    pkceStore.delete(clientId);
 
-      if (!codeVerifier) {
-        throw new AppError({
-          httpCode: HttpCode.BAD_REQUEST,
-          description: "PKCE verifier not found or expired",
-        });
-      }
-
-      // 3️⃣ Intercambiar code por tokens y guardar cuenta X
-      await XOAuthService.exchangeCode(
-        clientId,
-        code as string,
-        codeVerifier
-      );
-
-      pkceStore.delete(clientId);
-
-      // 4️⃣ Redirección al frontend
-     res.setHeader('Content-Type', 'text/html');
-    res.send(`
+    // ÉXITO
+    res.setHeader("Content-Type", "text/html");
+    return res.send(`
       <!DOCTYPE html>
       <html lang="es">
       <head>
-        <title>Conectando con X...</title>
+        <title>Conectado</title>
         <script>
-          // Enviar mensaje de éxito al opener (ventana principal)
-          window.opener.postMessage({
-            type: "X_OAUTH_SUCCESS",
-            clientId: ${clientId}
-          }, "${process.env.FRONTEND_URL}");
-
-          // Cerrar el popup automáticamente
-          window.close();
+          if (window.opener) {
+            window.opener.postMessage({
+              type: "X_OAUTH_SUCCESS",
+              clientId: ${JSON.stringify(clientId)}
+            }, "${process.env.FRONTEND_URL}");
+            window.close();
+          }
         </script>
       </head>
-      <body>
-        <p>Cuenta conectada exitosamente. Esta ventana se cerrará automáticamente.</p>
-      </body>
+      <body><p>Éxito. Cerrando...</p></body>
       </html>
     `);
   } catch (error) {
-    // En caso de error, envía mensaje de error y cierra
-    res.setHeader('Content-Type', 'text/html');
-    res.send(`
+    console.error("🔴 Error en callback de X:", error); // <--- Esto te dirá exactamente qué pasa
+
+    res.setHeader("Content-Type", "text/html");
+    return res.send(`
       <!DOCTYPE html>
       <html lang="es">
       <head>
         <title>Error</title>
         <script>
-          window.opener.postMessage({
-            type: "X_OAUTH_ERROR",
-            error: "Error al conectar la cuenta"
-          }, "${process.env.FRONTEND_URL}");
-          window.close();
+          if (window.opener) {
+            window.opener.postMessage({
+              type: "X_OAUTH_ERROR",
+              error: "Error al conectar la cuenta con X"
+            }, "${process.env.FRONTEND_URL}");
+            window.close();
+          }
         </script>
       </head>
-      <body>
-        <p>Error al conectar. Esta ventana se cerrará.</p>
-      </body>
+      <body><p>Error. Intenta de nuevo.</p></body>
       </html>
     `);
   }

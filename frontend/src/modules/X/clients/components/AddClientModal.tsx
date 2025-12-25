@@ -57,26 +57,37 @@ export function AddClientModal({ isOpen, onClose }: AddClientModalProps) {
    * 📩 Escuchar resultado del OAuth de X
    */
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
+  const handleMessage = (event: MessageEvent) => {
+    const backendOrigin = new URL(import.meta.env.VITE_API_URL).origin;
 
-      if (event.data?.type === "X_OAUTH_SUCCESS") {
-        setSuccess(true);
-        setTimeout(() => {
-          handleReset();
-          setOauthCompleted(true);
-          onClose();  // Cierra el modal
-        }, 1500);
-      }
+    if (event.origin !== backendOrigin) {
+      console.warn(`⚠️ Mensaje bloqueado. Origen recibido: ${event.origin} | Esperado: ${backendOrigin}`);
+      return;
+    }
 
-      if (event.data?.type === "X_OAUTH_ERROR") {
-        setError(event.data.error || "Error en la autenticación con X");
-      }
-    };
+    if (!event.data || typeof event.data !== "object" || !event.data.type) {
+      return;
+    }
 
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, [setOauthCompleted, onClose]);
+    if (event.data.type === "X_OAUTH_SUCCESS") {
+      setError(null); 
+      setSuccess(true);
+      setTimeout(() => {
+        handleReset();
+        setOauthCompleted(true);
+        onClose();
+      }, 1500);
+    }
+
+    if (event.data.type === "X_OAUTH_ERROR") {
+      setSuccess(false); 
+      setError(event.data.error || "Error al conectar la cuenta con X");
+    }
+  };
+
+  window.addEventListener("message", handleMessage);
+  return () => window.removeEventListener("message", handleMessage);
+}, [onClose, setOauthCompleted]);
   /* ===============================
      Validaciones
   ================================ */
