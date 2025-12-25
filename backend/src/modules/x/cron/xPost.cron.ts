@@ -20,7 +20,7 @@ export const startXPostCron = () => {
                 try {
                     console.log(`[X CRON] Publicando post ID ${post.id}`)
 
-                    const tweetId = await XPostService.publishNow(post)
+                    const tweetId = await XPostService.publish(post)
 
                     await XPostsModel.markPublished(post.id, tweetId)
 
