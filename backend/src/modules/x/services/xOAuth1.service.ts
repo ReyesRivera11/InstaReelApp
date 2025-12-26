@@ -1,14 +1,15 @@
 import OAuth from "oauth-1.0a";
 import crypto from "crypto";
 import axios from "axios";
+import prisma from "../../../shared/lib/prisma";
 
 const REQUEST_TOKEN_URL = "https://api.twitter.com/oauth/request_token";
 const ACCESS_TOKEN_URL = "https://api.twitter.com/oauth/access_token";
 const AUTHORIZE_URL = "https://api.twitter.com/oauth/authorize";
 
-// ================================
-// OAuth 1.0a Client
-// ================================
+/* ================================
+   OAuth 1.0a Client (X)
+================================ */
 const oauth = new OAuth({
     consumer: {
         key: process.env.X_API_KEY!,
@@ -24,23 +25,22 @@ const oauth = new OAuth({
 });
 
 export class XOAuth1Service {
-    // =====================================
-    // Step 1: Request Token
-    // =====================================
+    /* =====================================
+       Step 1: Request Token
+       ⚠️ oauth_callback DEBE ir en la FIRMA
+    ===================================== */
     static async getRequestToken(): Promise<{
         oauth_token: string | null;
         oauth_token_secret: string | null;
     }> {
-        const requestData = {
-            url: REQUEST_TOKEN_URL,
-            method: "POST",
-            data: {
-                oauth_callback: process.env.X_OAUTH1_CALLBACK!,
-            },
-        };
-
         const oauthHeaders = oauth.toHeader(
-            oauth.authorize(requestData)
+            oauth.authorize({
+                url: REQUEST_TOKEN_URL,
+                method: "POST",
+                data: {
+                    oauth_callback: process.env.X_OAUTH1_CALLBACK!,
+                },
+            })
         );
 
         const headers: Record<string, string> = {
@@ -61,16 +61,17 @@ export class XOAuth1Service {
         };
     }
 
-    // =====================================
-    // Step 2: Authorize URL
-    // =====================================
+    /* =====================================
+       Step 2: Authorize URL
+    ===================================== */
     static getAuthorizeUrl(oauthToken: string): string {
         return `${AUTHORIZE_URL}?oauth_token=${oauthToken}`;
     }
 
-    // =====================================
-    // Step 3: Access Token
-    // =====================================
+    /* =====================================
+       Step 3: Access Token
+       ⚠️ oauth_verifier TAMBIÉN va firmado
+    ===================================== */
     static async getAccessToken(
         oauthToken: string,
         oauthTokenSecret: string,
@@ -81,19 +82,20 @@ export class XOAuth1Service {
         x_user_id: string;
         username: string;
     }> {
-        const requestData = {
-            url: ACCESS_TOKEN_URL,
-            method: "POST",
-            data: {
-                oauth_verifier: oauthVerifier,
-            },
-        };
-
         const oauthHeaders = oauth.toHeader(
-            oauth.authorize(requestData, {
-                key: oauthToken,
-                secret: oauthTokenSecret,
-            })
+            oauth.authorize(
+                {
+                    url: ACCESS_TOKEN_URL,
+                    method: "POST",
+                    data: {
+                        oauth_verifier: oauthVerifier,
+                    },
+                },
+                {
+                    key: oauthToken,
+                    secret: oauthTokenSecret,
+                }
+            )
         );
 
         const headers: Record<string, string> = {
@@ -117,5 +119,13 @@ export class XOAuth1Service {
             x_user_id: params.get("user_id")!,
             username: params.get("screen_name")!,
         };
+    }
+
+    static async clearByClientId(clientId: number) {
+        await prisma.x_oauth1_sessions.deleteMany({
+            where: {
+                client_id: clientId,
+            },
+        });
     }
 }

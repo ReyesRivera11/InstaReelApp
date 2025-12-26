@@ -17,7 +17,7 @@ export class XPublicationsService {
         const publications = items.map((post) => ({
             id: post.id,
             client_id: post.client_id,
-            clientName: `${post.client.name} (@${post.client.username})`,
+            clientName: `${post.client.username} (@${post.client.username})`,
             title: post.text,
             description: post.text,
             status: post.status,

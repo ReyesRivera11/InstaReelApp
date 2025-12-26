@@ -42,63 +42,72 @@ export class XOAuth1Controller {
     }
 
     static async callback(req: Request, res: Response) {
-        try {
-            const oauth_token = req.query.oauth_token as string;
-            const oauth_verifier = req.query.oauth_verifier as string;
-
-            if (!oauth_token || !oauth_verifier) {
-                return res.status(400).json({
-                    message: "Invalid OAuth callback parameters",
-                });
-            }
-
-            const session = await prisma.x_oauth1_sessions.findUnique({
-                where: { oauth_token },
-            });
-
-            if (!session) {
-                return res.status(400).json({
-                    message: "OAuth session not found",
-                });
-            }
-
-            const data = await XOAuth1Service.getAccessToken(
-                oauth_token,
-                session.oauth_token_secret,
-                oauth_verifier
-            );
-
-            // 🔍 Buscamos primero la cuenta
-            const account = await prisma.x_account.findFirst({
-                where: {
-                    client_id: session.client_id,
-                    x_user_id: data.x_user_id,
-                },
-            });
-
-            if (!account) {
-                return res.status(404).json({
-                    message: "X account not found for this client",
-                });
-            }
-
-            // ✏️ Actualizamos con OAuth 1.0a
-            await prisma.x_account.update({
-                where: { id: account.id },
-                data: {
-                    oauth1_token: data.oauth1_token,
-                    oauth1_token_secret: data.oauth1_token_secret,
-                },
-            });
-
-            return res.redirect(
-                `${process.env.FRONTEND_URL}/x/success`
-            );
-        } catch (error) {
-            console.error("OAuth1 callback error:", error);
-            return res.status(500).json({
-                message: "OAuth1 callback failed",
-            });
+        const { oauth_token, oauth_verifier } = req.query as {
+            oauth_token: string
+            oauth_verifier: string
         }
+
+        const session = await prisma.x_oauth1_sessions.findUnique({
+            where: { oauth_token },
+        })
+
+        if (!session) {
+            return res.status(400).json({
+                message: "OAuth session not found",
+            })
+        }
+
+        const data = await XOAuth1Service.getAccessToken(
+            oauth_token,
+            session.oauth_token_secret,
+            oauth_verifier
+        )
+
+        // ✅ BUSCAR SOLO POR client_id
+        const account = await prisma.x_account.findFirst({
+            where: {
+                client_id: session.client_id,
+            },
+        })
+
+        if (!account) {
+            return res.status(404).json({
+                message: "X account not found for this client",
+            })
+        }
+
+        // ✅ ACTUALIZAR EL MISMO REGISTRO
+        await prisma.x_account.update({
+            where: { id: account.id },
+            data: {
+                oauth1_token: data.oauth1_token,
+                oauth1_token_secret: data.oauth1_token_secret,
+            },
+        })
+
+        return res.status(200).send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>X OAuth</title>
+            </head>
+            <body>
+                <script>
+                try {
+                    if (window.opener && !window.opener.closed) {
+                    window.opener.postMessage(
+                        { type: "X_OAUTH1_SUCCESS" },
+                        "${process.env.FRONTEND_URL}"
+                    )
+                    }
+                    window.close()
+                } catch (e) {
+                    console.error(e)
+                }
+                </script>
+                <p>Autorización completada. Puedes cerrar esta ventana.</p>
+            </body>
+            </html>
+        `)
     }
 }

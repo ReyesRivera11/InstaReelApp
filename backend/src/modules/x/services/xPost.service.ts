@@ -15,7 +15,7 @@ import { AppError } from "../../../core/errors/AppError";
 import { HttpCode } from "../../../shared/enums/HttpCode";
 
 /* ============================
-   OAuth 1.0a client (X)
+   OAuth 1.0a Client (global)
 ============================ */
 const oauth = new OAuth({
     consumer: {
@@ -23,25 +23,25 @@ const oauth = new OAuth({
         secret: process.env.X_API_SECRET!,
     },
     signature_method: "HMAC-SHA1",
-    hash_function(baseString, key) {
-        return crypto.createHmac("sha1", key).update(baseString).digest("base64");
+    hash_function(base_string, key) {
+        return crypto.createHmac("sha1", key).update(base_string).digest("base64");
     },
 });
 
 /* ============================
    Constantes
 ============================ */
-const X_API_V2 = "https://api.twitter.com/2";
-const X_API_V1 = "https://api.twitter.com/1.1";
+const X_API_V2 = "https://api.x.com/2"; // Usado para /tweets
+const X_UPLOAD_V1 = "https://upload.twitter.com/1.1"; // Media upload aún en v1.1
 
 /* ============================
-   Helpers
+   Helper: Detectar tipo de media
 ============================ */
 const detectMediaType = (mimetype: string): XMediaType =>
     mimetype.startsWith("video") ? XMediaType.VIDEO : XMediaType.IMAGE;
 
 /* ============================
-   Supabase upload
+   Subir archivo a Supabase Storage
 ============================ */
 const uploadToSupabaseStorage = async (file: Express.Multer.File) => {
     const bucket = process.env.SUPABASE_STORAGE_BUCKET || "x-media";
@@ -49,7 +49,7 @@ const uploadToSupabaseStorage = async (file: Express.Multer.File) => {
     const safeExt = ext && ext.length <= 8 ? ext : "";
     const objectPath = `x/${Date.now()}-${file.filename}${safeExt}`;
 
-    const buffer = fs.readFileSync(file.path);
+    const buffer = await fsp.readFile(file.path);
 
     const { error } = await supabaseAdmin.storage
         .from(bucket)
@@ -63,7 +63,7 @@ const uploadToSupabaseStorage = async (file: Express.Multer.File) => {
             name: "SupabaseUploadError",
             httpCode: HttpCode.INTERNAL_SERVER_ERROR,
             description: "Error al subir archivo a Supabase Storage",
-            details: { message: error.message, bucket, objectPath },
+            details: { message: error.message },
         });
     }
 
@@ -73,8 +73,7 @@ const uploadToSupabaseStorage = async (file: Express.Multer.File) => {
         throw new AppError({
             name: "SupabasePublicUrlError",
             httpCode: HttpCode.INTERNAL_SERVER_ERROR,
-            description: "No se pudo obtener URL pública del archivo",
-            details: { bucket, objectPath },
+            description: "No se pudo obtener URL pública",
         });
     }
 
@@ -82,33 +81,58 @@ const uploadToSupabaseStorage = async (file: Express.Multer.File) => {
 };
 
 /* ============================
-   Tweet texto (OAuth 2.0)
+   Publicar tweet usando OAuth 1.0a (recomendado para media)
 ============================ */
-const publishTextTweet = async (accessToken: string, text: string) => {
-    try {
-        const resp = await axios.post(
-            `${X_API_V2}/tweets`,
-            { text },
-            {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    "Content-Type": "application/json",
-                },
-            }
-        );
+const postTweetWithOAuth1 = async (
+    text: string,
+    oauth1Token: string,
+    oauth1Secret: string,
+    mediaIds?: string[]
+) => {
+    const requestData = {
+        url: `${X_API_V2}/tweets`,
+        method: "POST",
+    };
 
-        return resp.data.data.id;
-    } catch (error: any) {
-        throw new AppError({
-            name: "XPublishTextError",
-            httpCode: HttpCode.INTERNAL_SERVER_ERROR,
-            description: "Error al publicar tweet de texto en X",
-            details: {
-                status: error?.response?.status,
-                response: error?.response?.data,
-            },
-        });
+    const authHeader = oauth.toHeader(
+        oauth.authorize(requestData, {
+            key: oauth1Token,
+            secret: oauth1Secret,
+        })
+    );
+
+    const payload: any = { text };
+    if (mediaIds && mediaIds.length > 0) {
+        payload.media = { media_ids: mediaIds };
     }
+
+    const response = await axios.post(`${X_API_V2}/tweets`, payload, {
+        headers: {
+            ...authHeader,
+            "Content-Type": "application/json",
+            "User-Agent": "MyApp/1.0", // Recomendado por X
+        },
+    });
+
+    return response.data.data.id;
+};
+
+/* ============================
+   Publicar tweet de texto puro con OAuth 2.0 (opcional, más simple)
+============================ */
+const postTextTweetWithOAuth2 = async (accessToken: string, text: string) => {
+    const response = await axios.post(
+        `${X_API_V2}/tweets`,
+        { text },
+        {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+            },
+        }
+    );
+
+    return response.data.data.id;
 };
 
 /* ============================
@@ -116,7 +140,7 @@ const publishTextTweet = async (accessToken: string, text: string) => {
 ============================ */
 export class XPostService {
     /* ============================
-       Crear post programado
+       Programar post
     ============================ */
     static async schedule({
         client_id,
@@ -138,6 +162,7 @@ export class XPostService {
                 mediaUrl = await uploadToSupabaseStorage(media);
             }
 
+            // Limpiar archivo temporal
             if (media?.path) {
                 await fsp.unlink(media.path).catch(() => { });
             }
@@ -153,52 +178,65 @@ export class XPostService {
             if (media?.path) {
                 await fsp.unlink(media.path).catch(() => { });
             }
-
-            if (error instanceof AppError) throw error;
-
-            throw new AppError({
-                name: "XPostScheduleError",
-                httpCode: HttpCode.INTERNAL_SERVER_ERROR,
-                description: "Error al programar el post en X",
-                details: { message: error?.message },
-            });
+            throw error instanceof AppError
+                ? error
+                : new AppError({
+                    name: "XPostScheduleError",
+                    httpCode: HttpCode.INTERNAL_SERVER_ERROR,
+                    description: "Error al programar post",
+                    details: { message: error?.message },
+                });
         }
     }
 
     /* ============================
-       Publicar (CRON / inmediato)
-       Decide texto vs media
+       Publicar (decide si tiene media o no)
     ============================ */
     static async publish(post: any): Promise<string> {
-        if (post.media_url) {
-            return this.publishWithMedia(post);
-        }
-
-        return this.publishText(post);
+        return post.media_url
+            ? this.publishWithMedia(post)
+            : this.publishText(post);
     }
 
     /* ============================
-       Tweet solo texto (OAuth 2.0)
+       Publicar solo texto (usando OAuth 2.0 si está disponible)
     ============================ */
     static async publishText(post: any): Promise<string> {
-        const token = await XTokensService.getOAuth2ByClient(post.client_id);
-        const accessToken =
-            typeof token === "string" ? token : token.access_token;
+        const oauth1 = await XTokensService.getOAuth1ByClient(post.client_id);
 
-        const tweetId = await publishTextTweet(accessToken!, post.text);
+        if (!oauth1?.oauth1_token || !oauth1?.oauth1_token_secret) {
+            throw new AppError({
+                name: "MissingOAuth1",
+                httpCode: HttpCode.BAD_REQUEST,
+                description: "Faltan credenciales OAuth 1.0a para publicar texto",
+            });
+        }
+
+        const tweetId = await postTweetWithOAuth1(
+            post.text,
+            oauth1.oauth1_token,
+            oauth1.oauth1_token_secret
+        );
 
         await XPostsModel.markPublished(post.id, tweetId);
         return tweetId;
     }
 
     /* ============================
-       Tweet con media (OAuth 1.0a)
+       Publicar con media → TODO con OAuth 1.0a (más fiable)
     ============================ */
     static async publishWithMedia(post: any): Promise<string> {
-        // 1️⃣ OAuth 1.0a
         const oauth1 = await XTokensService.getOAuth1ByClient(post.client_id);
 
-        // 2️⃣ Subir media a X
+        if (!oauth1?.oauth1_token || !oauth1?.oauth1_token_secret) {
+            throw new AppError({
+                name: "MissingOAuth1",
+                httpCode: HttpCode.BAD_REQUEST,
+                description: "Faltan credenciales OAuth 1.0a para subir y publicar media",
+            });
+        }
+
+        // 1. Subir media con OAuth 1.0a (v1.1 endpoint)
         const media = await XMediaService.uploadFromUrl({
             mediaUrl: post.media_url,
             mimeType: post.media_type === XMediaType.VIDEO ? "video/mp4" : "image/jpeg",
@@ -208,45 +246,17 @@ export class XPostService {
             },
         });
 
-        // 3️⃣ Publicar tweet con media_ids
-        const url = `${X_API_V1}/statuses/update.json`;
-
-        const body = new URLSearchParams();
-        body.set("status", post.text);
-        body.set("media_ids", media.media_id_string);
-
-        const oauthHeaders = oauth.toHeader(
-            oauth.authorize(
-                { url, method: "POST" },
-                {
-                    key: oauth1.oauth1_token,
-                    secret: oauth1.oauth1_token_secret,
-                }
-            )
+        // 2. Publicar tweet con el media_id usando OAuth 1.0a (v2 endpoint)
+        const tweetId = await postTweetWithOAuth1(
+            post.text,
+            oauth1.oauth1_token,
+            oauth1.oauth1_token_secret,
+            [media.media_id_string]
         );
 
-        const headers: Record<string, string> = {
-            Authorization: oauthHeaders.Authorization,
-            "Content-Type": "application/x-www-form-urlencoded",
-        };
+        // 3. Marcar como publicado
+        await XPostsModel.markPublished(post.id, tweetId);
 
-        try {
-            const resp = await axios.post(url, body.toString(), { headers });
-
-            const tweetId = resp.data.id_str;
-            await XPostsModel.markPublished(post.id, tweetId);
-
-            return tweetId;
-        } catch (error: any) {
-            throw new AppError({
-                name: "XPublishMediaError",
-                httpCode: HttpCode.INTERNAL_SERVER_ERROR,
-                description: "Error al publicar tweet con media en X",
-                details: {
-                    status: error?.response?.status,
-                    response: error?.response?.data,
-                },
-            });
-        }
+        return tweetId;
     }
 }

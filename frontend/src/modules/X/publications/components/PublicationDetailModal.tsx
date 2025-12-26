@@ -116,7 +116,31 @@ export function PublicationDetailModal({
   ============================ */
   const scheduledDate = publication.scheduled_at ?? publication.published_at;
 
-  const mediaUrl = publication.media_url;
+  const getTweetUrl = () => {
+    if (!publication.tweet_id) return null;
+
+    let username = publication.clientName;
+
+    // Extraer @username si viene en formato "Nombre (@username)"
+    if (username) {
+      const match = username.match(/@([A-Za-z0-9_]+)/);
+      if (match) {
+        username = match[1];
+      } else {
+        // Limpieza básica por si acaso
+        username = username.replace(/\s+/g, "");
+      }
+    }
+
+    if (username) {
+      return `https://x.com/${username}/status/${publication.tweet_id}`;
+    }
+
+    // Fallback universal
+    return `https://x.com/i/web/status/${publication.tweet_id}`;
+  };
+
+
 
   const formatDate = (date?: string) =>
     date
@@ -181,19 +205,20 @@ export function PublicationDetailModal({
             </div>
           </div>
 
-          {mediaUrl && (
+          {publication.status === "PUBLISHED" && getTweetUrl() && (
             <div className="text-center">
               <a
-                href={mediaUrl}
+                href={getTweetUrl()!}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800"
               >
                 <XLogo className="w-5 h-5" />
-                Ver media
+                Ver tweet en X
               </a>
             </div>
           )}
+
 
           <button onClick={onClose} className="w-full px-4 py-2 bg-black text-white rounded-lg">
             Cerrar
