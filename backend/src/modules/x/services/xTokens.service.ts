@@ -47,4 +47,37 @@ export class XTokensService {
       username: account.username,
     };
   }
+
+  static async getOAuth2Optional(clientId: number) {
+    const account = await prisma.x_account.findFirst({
+      where: { client_id: clientId },
+    });
+
+    if (!account?.access_token) {
+      return null;
+    }
+
+    return {
+      access_token: account.access_token,
+      refresh_token: account.refresh_token,
+      expires_at: account.expires_at,
+    };
+  }
+
+  static async getOAuth1Optional(clientId: number) {
+    const account = await prisma.x_account.findFirst({
+      where: { client_id: clientId },
+    });
+
+    if (!account?.oauth1_token || !account?.oauth1_token_secret) {
+      return null;
+    }
+
+    return {
+      oauth1_token: account.oauth1_token,
+      oauth1_token_secret: account.oauth1_token_secret,
+      x_user_id: account.x_user_id,
+      username: account.username,
+    };
+  }
 }
